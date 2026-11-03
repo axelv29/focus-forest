@@ -29,6 +29,15 @@ export const SCENE_HEIGHT = TOP_PADDING + GRID_PIXEL_HEIGHT + ISLAND_DEPTH
 export const CANVAS_WIDTH = SCENE_WIDTH * RENDER_SCALE
 export const CANVAS_HEIGHT = SCENE_HEIGHT * RENDER_SCALE
 
+/**
+ * El canvas se dibuja más grande que la pradera nominal para que, al hacer
+ * zoom, la isla pueda salir del recuadro de 1024×832 en lugar de cortarse.
+ * 2 alcanza para cubrir el zoom máximo (2×) y deja el borde fuera de pantalla.
+ */
+export const CANVAS_OVERSCAN = 2
+export const CANVAS_RENDER_WIDTH = CANVAS_WIDTH * CANVAS_OVERSCAN
+export const CANVAS_RENDER_HEIGHT = CANVAS_HEIGHT * CANVAS_OVERSCAN
+
 /** Centro de la celda (0, 0) dentro de la escena lógica. */
 export const ORIGIN_X = GRID_PIXEL_WIDTH / 2
 export const ORIGIN_Y = TOP_PADDING + TILE_HEIGHT / 2

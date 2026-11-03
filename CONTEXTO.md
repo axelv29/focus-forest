@@ -71,7 +71,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Isometría
 
-- Celda 64×32; grilla 8×8; escena lógica 512×416 (256 de grilla + 128 de margen superior + 32 de tierra); escala 2× → canvas CSS 1024×832.
+- Celda 64×32; grilla 8×8; escena lógica 512×416 (256 de grilla + 128 de margen superior + 32 de tierra); escala 2× → pradera nominal 1024×832. El canvas se dibuja al doble de tamaño para que el zoom pueda desbordar el recuadro sin cortar la isla.
 - `x = origenX + (col - row) * 32`
 - `y = origenY + (col + row) * 16`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.

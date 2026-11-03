@@ -75,7 +75,7 @@ Las opciones, comparadas:
 - **Un solo canvas y redibujo bajo demanda:** se vuelve a dibujar cuando cambia una etapa o se planta un árbol, no 60 veces por segundo. El crecimiento va por umbrales de minutos, así que no necesita animación continua.
 - **Atlas de sprites:** todos los sprites en una única imagen PNG con un archivo que indica dónde está cada uno. Se carga una sola vez. Mientras no exista el arte final, el render usa placeholders dibujados por código y no pide el atlas.
 - **Etapas con el mismo lienzo:** las 4 etapas y el marchito comparten un lienzo de 64×128 y se anclan abajo al centro. Así el atlas es chico y el dibujo no cambia de anclaje.
-- **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px.
+- **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px nominales; el canvas de dibujo tiene 2× de margen para que el zoom pueda desbordar el recuadro sin cortar la isla.
 - **Imágenes optimizadas:** PNG comprimidos y solo los sprites que se usan.
 - **Dos fuentes como máximo,** servidas localmente, con alternativa del sistema mientras cargan.
 - **Carga a demanda:** las estadísticas con gráficos y Supabase entran recién cuando se usan (v0.2/v0.3).

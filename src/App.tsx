@@ -43,7 +43,7 @@ function App() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-ink">
-      <header className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-3">
+      <header className="relative z-30 mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-3">
         <h1 className="app-title">FOCUS FOREST</h1>
 
         {!inSession && (
@@ -76,12 +76,12 @@ function App() {
             </div>
 
             {!inSession && (
-              <div className="mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:left-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
+              <div className="relative z-10 mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:left-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
                 <SessionCard now={now} />
               </div>
             )}
 
-            <div className="mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:right-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
+            <div className="relative z-10 mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:right-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
               <TimerPanel now={now} onAbandonRequest={() => setConfirmFor(active?.id ?? null)} />
             </div>
           </div>

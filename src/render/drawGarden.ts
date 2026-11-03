@@ -1,4 +1,5 @@
 import {
+  CANVAS_OVERSCAN,
   GRID_COLS,
   GRID_PIXEL_HEIGHT,
   GRID_ROWS,
@@ -43,7 +44,10 @@ const STAGE_SCALE: Record<TreeStage, number> = {
 export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOptions): void {
   const pixelWidth = ctx.canvas.width
   const pixelHeight = ctx.canvas.height
-  const baseScale = Math.min(pixelWidth / SCENE_WIDTH, pixelHeight / SCENE_HEIGHT)
+  const baseScale = Math.min(
+    pixelWidth / (SCENE_WIDTH * CANVAS_OVERSCAN),
+    pixelHeight / (SCENE_HEIGHT * CANVAS_OVERSCAN),
+  )
   const scale = baseScale * clampZoom(options.zoom ?? 1)
   const offsetX = (pixelWidth - SCENE_WIDTH * scale) / 2
   const offsetY = (pixelHeight - SCENE_HEIGHT * scale) / 2

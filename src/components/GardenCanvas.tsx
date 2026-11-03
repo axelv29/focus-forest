@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/config/grid'
+import {
+  CANVAS_HEIGHT,
+  CANVAS_OVERSCAN,
+  CANVAS_RENDER_HEIGHT,
+  CANVAS_RENDER_WIDTH,
+  CANVAS_WIDTH,
+} from '@/config/grid'
 import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_BUTTON_STEP, ZOOM_SLIDER_STEP } from '@/config/zoom'
 import { clampZoom, formatZoom, stepZoom, zoomFromWheel } from '@/logic/zoom'
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
@@ -18,8 +24,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const [atlas, setAtlas] = useState<Atlas | null>(null)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
-  const width = CANVAS_WIDTH * dpr
-  const height = CANVAS_HEIGHT * dpr
+  const width = CANVAS_RENDER_WIDTH * dpr
+  const height = CANVAS_RENDER_HEIGHT * dpr
 
   useEffect(() => {
     if (!SPRITES_ENABLED) {
@@ -84,16 +90,23 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   }
 
   return (
-    <div ref={gardenRef} className="relative w-full">
+    <div
+      ref={gardenRef}
+      className="relative z-0 w-full"
+      style={{ aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}` }}
+      title="Usá la rueda del mouse para hacer zoom"
+    >
       <canvas
         ref={canvasRef}
         width={width}
         height={height}
-        className="block h-auto w-full"
-        style={{ maxWidth: CANVAS_WIDTH }}
+        className="pointer-events-none absolute left-1/2 top-1/2 block max-w-none -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: `${CANVAS_OVERSCAN * 100}%`,
+          height: `${CANVAS_OVERSCAN * 100}%`,
+        }}
         role="img"
         aria-label={label}
-        title="Usá la rueda del mouse para hacer zoom"
       />
 
       {trees.length === 0 && !active && (
