@@ -81,9 +81,9 @@
   /* Tipografía: los tamaños y familias salen de theme.css. */
   .app-title {
     font-family: var(--font-pixel);
-    font-size: 0.75rem;
+    font-size: var(--type-app-title-size);
     line-height: 1.6;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--type-app-title-tracking);
   }
 
   .eyebrow {
@@ -169,7 +169,7 @@
 
   .btn--sm {
     padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
-    font-size: 0.875rem;
+    font-size: var(--type-body-size);
   }
 
   .btn-primary {
@@ -252,7 +252,7 @@
     background-color: var(--button-secondary-bg);
     color: var(--button-secondary-fg);
     font-family: var(--font-sans);
-    font-size: 0.875rem;
+    font-size: var(--type-body-size);
     font-weight: 700;
     line-height: 1;
     box-shadow: var(--shadow-soft);

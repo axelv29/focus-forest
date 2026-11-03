@@ -29,6 +29,8 @@
   --theme-font-pixel: 'Press Start 2P', 'Courier New', monospace;
 
   /* Escala tipográfica. */
+  --type-app-title-size: 0.75rem;
+  --type-app-title-tracking: 0.05em;
   --type-eyebrow-size: 0.625rem;
   --type-eyebrow-tracking: 0.08em;
   --type-title-size: 1.25rem;
