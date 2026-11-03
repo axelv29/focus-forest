@@ -93,7 +93,7 @@ Las opciones, comparadas:
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles maduros y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
 - **Interfaz:** vista Bosque y vista Estadísticas. Durante la sesión se esconden los paneles y quedan el timer, pausa y abandonar.
-- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia. No cambia el timer, los árboles ni las estadísticas.
+- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. No cambia el timer, los árboles ni las estadísticas.
 
 ### Después
 

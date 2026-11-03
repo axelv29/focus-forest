@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '@/config/grid'
 import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_BUTTON_STEP, ZOOM_SLIDER_STEP } from '@/config/zoom'
-import { clampZoom, formatZoom, stepZoom } from '@/logic/zoom'
+import { clampZoom, formatZoom, stepZoom, zoomFromWheel } from '@/logic/zoom'
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
 import { loadAtlas, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
 import type { Tree } from '@/state/types'
@@ -14,6 +14,7 @@ interface GardenCanvasProps {
 
 export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const gardenRef = useRef<HTMLDivElement>(null)
   const [atlas, setAtlas] = useState<Atlas | null>(null)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
@@ -58,12 +59,32 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     drawGarden(ctx, { trees, active, atlas, zoom })
   }, [trees, active, width, height, atlas, zoom])
 
+  useEffect(() => {
+    const garden = gardenRef.current
+    if (!garden) {
+      return
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      // Ctrl + rueda sigue siendo el zoom del navegador.
+      if (event.ctrlKey || event.deltaY === 0) {
+        return
+      }
+
+      event.preventDefault()
+      setZoom((value) => zoomFromWheel(value, event.deltaY, event.deltaMode))
+    }
+
+    garden.addEventListener('wheel', handleWheel, { passive: false })
+    return () => garden.removeEventListener('wheel', handleWheel)
+  }, [])
+
   const adjustZoom = (delta: number) => {
     setZoom((value) => stepZoom(value, delta))
   }
 
   return (
-    <div className="relative w-full">
+    <div ref={gardenRef} className="relative w-full">
       <canvas
         ref={canvasRef}
         width={width}
@@ -72,6 +93,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
         style={{ maxWidth: CANVAS_WIDTH }}
         role="img"
         aria-label={label}
+        title="Usá la rueda del mouse para hacer zoom"
       />
 
       {trees.length === 0 && !active && (
@@ -85,7 +107,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       <div
         className="zoom-control absolute left-3 top-3 z-20 sm:left-12"
         role="group"
-        aria-label="Zoom de la pradera"
+        aria-label="Zoom de la pradera; también funciona con la rueda del mouse"
       >
         <button
           type="button"
@@ -106,6 +128,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           value={zoom}
           onChange={(event) => setZoom(clampZoom(Number(event.target.value)))}
           aria-label="Zoom de la pradera"
+          title="Arrastrá o usá la rueda del mouse"
         />
 
         <output className="zoom-value" htmlFor="garden-zoom" aria-live="polite">

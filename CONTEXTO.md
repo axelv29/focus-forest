@@ -88,7 +88,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Bordes duros, sombras sin desenfoque, sin degradados, sin esquinas muy redondeadas.
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: timer, pausa y abandonar; ocultar paneles y pestañas.
-- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; no toca timer, store ni persistencia.
+- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia.
 - El canvas es arte placeholder: su paleta vive en `drawGarden.ts` y se reemplaza con el atlas; no forma parte del tema visual.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 

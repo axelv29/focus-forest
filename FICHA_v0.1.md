@@ -34,7 +34,7 @@ Una app web de escritorio donde una persona completa pomodoros de 25 minutos y v
 5. **Descanso:** timer de 5:00, sin árbol. Se puede pausar o saltar. Al terminar, vuelve al inicio.
 6. **Abandonar:** pide confirmación; el árbol queda marchito, no acredita minutos y no hay mensaje de castigo.
 7. **Recargar:** si el enfoque sigue corriendo, se reanuda; si ya venció, se completa. Si el descanso venció, se cierra.
-8. **Zoom:** la pradera se puede acercar o alejar entre 0.5× y 2×. Es una vista de sesión: no cambia el timer, los árboles ni los datos guardados.
+8. **Zoom:** la pradera se puede acercar o alejar entre 0.5× y 2× con el slider, los botones o la rueda del mouse. Es una vista de sesión: no cambia el timer, los árboles ni los datos guardados.
 
 ## 4. Modelo de datos
 
@@ -94,7 +94,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - **Persistencia:** clave `focus-forest`, versión 1, migración preparada. Datos corruptos: copia de respaldo y reinicio. Versión más nueva: aviso, sin borrar.
 - **Estadísticas:** solo enfoques completados. "Hoy" usa `endedAt` en día local. Los abandonos y los descansos no suman.
 - **Canvas:** 1024×832 CSS (escena lógica 512×416: grilla 512×256 + 128 de margen superior + 32 de tierra), escala base 2×, sin suavizado, redibujo al cambiar etapa, árboles o zoom.
-- **Zoom:** rango 0.5×–2×, centrado en la escena; no se guarda y no modifica el estado de la sesión.
+- **Zoom:** rango 0.5×–2×, centrado en la escena; se controla con slider, botones o rueda del mouse; no se guarda y no modifica el estado de la sesión.
 - **Sin dependencias extra:** nada de router, librería de gráficos, motor de juego, Supabase ni PWA en la v0.1.
 
 ## 6. Criterios de aceptación
