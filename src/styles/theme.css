@@ -1,0 +1,112 @@
+/*
+ * Tema visual de Focus Forest.
+ *
+ * Este archivo es la fuente de verdad de la identidad visual del DOM:
+ * colores, tipografías y forma. Para cambiar el tema, editá los valores
+ * de este bloque; los componentes usan los tokens semánticos de abajo.
+ *
+ * La pradera y los árboles del canvas son arte placeholder y se van a
+ * reemplazar por el atlas de sprites. Su paleta vive en drawGarden.ts y
+ * no forma parte de este tema.
+ */
+
+:root {
+  /* Paleta base: cambiá estos valores para cambiar toda la app. */
+  --palette-ink: #203f3b;
+  --palette-primary: #3a684f;
+  --palette-active: #548952;
+  --palette-accent: #8db65d;
+  --palette-muted: #566d47;
+  --palette-surface: #c8cc93;
+  --palette-background: #e9edd0;
+  --palette-wood: #8b644a;
+  --palette-bark: #554736;
+  --palette-blossom: #e589ae;
+  --palette-cream: #f6f2dd;
+
+  /* Tipografías. Si cambiás la familia, actualizá los imports de main.tsx. */
+  --theme-font-sans: 'Nunito', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --theme-font-pixel: 'Press Start 2P', 'Courier New', monospace;
+
+  /* Escala tipográfica. */
+  --type-eyebrow-size: 0.625rem;
+  --type-eyebrow-tracking: 0.08em;
+  --type-title-size: 1.25rem;
+  --type-title-lg-size: 1.875rem;
+  --type-timer-size: 3rem;
+  --type-stat-size: 2.25rem;
+  --type-body-size: 0.875rem;
+  --type-caption-size: 0.75rem;
+
+  /* Forma: bordes duros, sombras sin desenfoque y esquinas rectas. */
+  --border-strong: 3px;
+  --border-medium: 2px;
+  --radius: 0px;
+  --shadow-hard: 4px 4px 0 var(--palette-bark);
+  --shadow-soft: 3px 3px 0 var(--palette-bark);
+
+  /* Movimiento. */
+  --motion-fast: 100ms;
+  --motion-normal: 150ms;
+  --motion-progress: 300ms;
+
+  /* Foco accesible. */
+  --focus-ring-color: var(--palette-active);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
+  /* Tarjetas / paneles. */
+  --card-bg: var(--palette-cream);
+  --card-fg: var(--palette-ink);
+  --card-border-color: var(--palette-bark);
+  --card-border-width: var(--border-strong);
+  --card-radius: var(--radius);
+  --card-shadow: var(--shadow-hard);
+  --card-padding: 1rem;
+  --card-padding-compact: 0.75rem;
+  --card-padding-roomy: 1.25rem;
+
+  /* Botones. */
+  --button-border-color: var(--palette-bark);
+  --button-border-width: var(--border-strong);
+  --button-radius: var(--radius);
+  --button-padding-y: 0.5rem;
+  --button-padding-x: 0.9rem;
+  --button-padding-sm-y: 0.25rem;
+  --button-padding-sm-x: 0.75rem;
+  --button-shadow: var(--shadow-soft);
+  --button-shadow-hover: var(--shadow-hard);
+  --button-primary-bg: var(--palette-primary);
+  --button-primary-bg-hover: var(--palette-active);
+  --button-primary-fg: var(--palette-cream);
+  --button-secondary-bg: var(--palette-surface);
+  --button-secondary-bg-hover: var(--palette-background);
+  --button-secondary-fg: var(--palette-ink);
+  --button-danger-bg: var(--palette-wood);
+  --button-danger-bg-hover: var(--palette-bark);
+  --button-danger-fg: var(--palette-cream);
+
+  /* Barra de progreso. */
+  --progress-height: 0.75rem;
+  --progress-border-color: var(--palette-bark);
+  --progress-border-width: var(--border-medium);
+  --progress-bg: var(--palette-surface);
+  --progress-fill-bg: var(--palette-active);
+
+  /* Avisos. */
+  --toast-success-bg: var(--palette-accent);
+  --toast-warning-bg: var(--palette-blossom);
+  --toast-info-bg: var(--palette-surface);
+
+  /* Fondo del diálogo de confirmación. */
+  --dialog-backdrop: color-mix(in srgb, var(--palette-ink) 40%, transparent);
+
+  /* Control de zoom de la pradera. */
+  --zoom-bg: var(--palette-cream);
+  --zoom-border-color: var(--palette-bark);
+  --zoom-border-width: var(--border-medium);
+  --zoom-radius: var(--radius);
+  --zoom-shadow: var(--shadow-soft);
+  --zoom-padding: 0.5rem;
+  --zoom-slider-width: 7rem;
+}

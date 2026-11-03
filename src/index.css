@@ -1,0 +1,301 @@
+@import 'tailwindcss';
+@import './styles/theme.css';
+
+/*
+ * Puente entre el tema y Tailwind.
+ *
+ * Los valores reales viven en styles/theme.css. Este bloque solo les da
+ * nombres para las utilidades (bg-background, text-ink, font-pixel, etc.).
+ * Si agregás un color nuevo, agregalo en theme.css y registralo acá.
+ */
+@theme {
+  --font-sans: var(--theme-font-sans);
+  --font-pixel: var(--theme-font-pixel);
+
+  --color-ink: var(--palette-ink);
+  --color-primary: var(--palette-primary);
+  --color-active: var(--palette-active);
+  --color-accent: var(--palette-accent);
+  --color-muted: var(--palette-muted);
+  --color-surface: var(--palette-surface);
+  --color-background: var(--palette-background);
+  --color-wood: var(--palette-wood);
+  --color-bark: var(--palette-bark);
+  --color-blossom: var(--palette-blossom);
+  --color-cream: var(--palette-cream);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-background);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button {
+    color: inherit;
+    font: inherit;
+  }
+
+  canvas {
+    image-rendering: pixelated;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+@layer components {
+  /* Tarjetas: toda la app usa .card para mantener el mismo sistema. */
+  .card {
+    border: var(--card-border-width) solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    background-color: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    color: var(--card-fg);
+    padding: var(--card-padding);
+  }
+
+  .card--compact {
+    padding: var(--card-padding-compact);
+  }
+
+  .card--roomy {
+    padding: var(--card-padding-roomy);
+  }
+
+  /* Tipografía: los tamaños y familias salen de theme.css. */
+  .app-title {
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+  }
+
+  .eyebrow {
+    font-family: var(--font-pixel);
+    font-size: var(--type-eyebrow-size);
+    line-height: 1.6;
+    letter-spacing: var(--type-eyebrow-tracking);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .type-title {
+    font-size: var(--type-title-size);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .type-title-lg {
+    font-size: var(--type-title-lg-size);
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  .type-timer {
+    font-size: var(--type-timer-size);
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+
+  .type-stat {
+    font-size: var(--type-stat-size);
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .type-body {
+    font-size: var(--type-body-size);
+    line-height: 1.5;
+  }
+
+  .type-caption {
+    font-size: var(--type-caption-size);
+    line-height: 1.5;
+  }
+
+  .type-muted {
+    color: var(--color-muted);
+  }
+
+  /* Botones. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--button-border-width) solid var(--button-border-color);
+    border-radius: var(--button-radius);
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-fg);
+    padding: var(--button-padding-y) var(--button-padding-x);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    line-height: 1.2;
+    box-shadow: var(--button-shadow);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-normal) ease,
+      transform var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease;
+  }
+
+  .btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: var(--button-shadow-hover);
+  }
+
+  .btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: none;
+  }
+
+  .btn--sm {
+    padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
+    font-size: 0.875rem;
+  }
+
+  .btn-primary {
+    background-color: var(--button-primary-bg);
+    color: var(--button-primary-fg);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--button-primary-bg-hover);
+  }
+
+  .btn-secondary {
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-fg);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--button-secondary-bg-hover);
+  }
+
+  .btn-danger {
+    background-color: var(--button-danger-bg);
+    color: var(--button-danger-fg);
+  }
+
+  .btn-danger:hover {
+    background-color: var(--button-danger-bg-hover);
+  }
+
+  /* Progreso del timer. */
+  .progress-track {
+    height: var(--progress-height);
+    border: var(--progress-border-width) solid var(--progress-border-color);
+    background-color: var(--progress-bg);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background-color: var(--progress-fill-bg);
+    transition: width var(--motion-progress) ease;
+  }
+
+  /* Avisos. Combinan con .card; el tono se elige acá, no en el TSX. */
+  .toast--success {
+    background-color: var(--toast-success-bg);
+  }
+
+  .toast--warning {
+    background-color: var(--toast-warning-bg);
+  }
+
+  .toast--info {
+    background-color: var(--toast-info-bg);
+  }
+
+  .dialog-backdrop {
+    background-color: var(--dialog-backdrop);
+  }
+
+  /* Control de zoom de la pradera. */
+  .zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: var(--zoom-border-width) solid var(--zoom-border-color);
+    border-radius: var(--zoom-radius);
+    background-color: var(--zoom-bg);
+    box-shadow: var(--zoom-shadow);
+    padding: var(--zoom-padding);
+  }
+
+  .zoom-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: var(--border-medium) solid var(--button-border-color);
+    border-radius: var(--radius);
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-fg);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-normal) ease,
+      transform var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease;
+  }
+
+  .zoom-button:hover {
+    background-color: var(--button-secondary-bg-hover);
+    transform: translate(-1px, -1px);
+    box-shadow: var(--shadow-hard);
+  }
+
+  .zoom-button:active {
+    transform: translate(1px, 1px);
+    box-shadow: none;
+  }
+
+  .zoom-slider {
+    width: var(--zoom-slider-width);
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+
+  .zoom-value {
+    min-width: 2.75rem;
+    color: var(--color-muted);
+    font-family: var(--font-sans);
+    font-size: var(--type-caption-size);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
