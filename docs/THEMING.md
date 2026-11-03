@@ -98,7 +98,7 @@ Para una variante visual, duplicá los tokens de `:root` en `theme.css` bajo un 
 }
 ```
 
-Después alcanza con poner `data-theme="otono"` en `<html>` o `<body>`. Los componentes y las utilidades de Tailwind siguen apuntando a los mismos tokens, así que no hay que tocar el TSX.
+Después alcanza con poner `data-theme="otono"` en `<html>`: los tokens de `:root` se resuelven en ese mismo elemento. Los componentes y las utilidades de Tailwind siguen apuntando a los mismos tokens, así que no hay que tocar el TSX.
 
 La app de la v0.1 no tiene selector de temas ni modo oscuro; esto es la base para agregarlos sin desordenar los componentes.
 
