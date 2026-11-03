@@ -83,7 +83,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       )}
 
       <div
-        className="zoom-control absolute left-10 top-3 z-20"
+        className="zoom-control absolute left-3 top-3 z-20 sm:left-12"
         role="group"
         aria-label="Zoom de la pradera"
       >
