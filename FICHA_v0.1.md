@@ -122,7 +122,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - **Grilla llena con marchitos:** el nuevo árbol reemplaza al marchito más viejo.
 - **Datos corruptos o versión desconocida:** respaldo y reinicio, o aviso sin borrar.
 - **localStorage bloqueado:** estado en memoria y aviso; la app sigue usable.
-- **Atlas no disponible:** se dibuja un placeholder sin errores de consola, sin pantalla en blanco.
+- **Atlas no disponible:** se dibuja un placeholder sin errores de consola, sin pantalla en blanco. El atlas actual está en `public/sprites/`.
 - **Cambio de hora del sistema:** fuera de alcance; no se compensa.
 
 ## 8. Definición de terminado

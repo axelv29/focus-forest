@@ -166,17 +166,18 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   const { x, y } = cellToScreen(tree.cell)
   const baseY = y + 4
 
+  const shadowScale = STAGE_SCALE[tree.stage]
+
   ctx.save()
   ctx.fillStyle = 'rgba(32, 63, 59, 0.16)'
   ctx.beginPath()
-  ctx.ellipse(x, baseY + 2, 20, 7, 0, 0, Math.PI * 2)
+  ctx.ellipse(x, baseY + 2, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 
   if (atlas) {
     const frameName = treeFrameName(tree.stage, tree.state)
-    const drawn = drawAtlasFrame(ctx, atlas, frameName, x - 32, baseY - 128, 64, 128)
-    if (drawn) {
+    if (drawAtlasFrame(ctx, atlas, frameName, x, baseY)) {
       return
     }
   }

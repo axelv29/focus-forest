@@ -75,7 +75,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - `x = origenX + (col - row) * 32`
 - `y = origenY + (col + row) * 16`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
-- Sprites anclados abajo al centro; las 4 etapas usan 8 frames de 64×128 (vivo y marchito por etapa).
+- Sprites anclados abajo al centro; los atlas de 122×89 contienen 4 frames recortados por estado y se dibujan a tamaño nativo.
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
 - Redibujar al cambiar etapa, árboles o zoom; no en cada tick del timer.
 
@@ -89,7 +89,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: timer, pausa y abandonar; ocultar paneles y pestañas.
 - Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia.
-- El canvas es arte placeholder: su paleta vive en `drawGarden.ts` y se reemplaza con el atlas; no forma parte del tema visual.
+- La isla y el césped del canvas siguen siendo placeholder; la paleta de esa parte vive en `drawGarden.ts`. Los árboles ya usan el atlas y no forman parte del tema visual.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 
 ### Código

@@ -104,7 +104,7 @@ La app de la v0.1 no tiene selector de temas ni modo oscuro; esto es la base par
 
 ## Qué no entra en este tema
 
-La pradera y los árboles del canvas son arte placeholder. Sus colores están en `src/render/drawGarden.ts` y no forman parte de `theme.css`: se van a reemplazar por el atlas de sprites (`public/sprites/`) cuando exista el arte final. No hace falta migrar esos colores al tema.
+La isla y el césped del canvas siguen siendo arte placeholder. Los árboles ya usan el atlas de sprites y no forman parte de `theme.css`; no hace falta migrar esos colores al tema.
 
 ## Checklist antes de cerrar un cambio visual
 

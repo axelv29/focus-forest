@@ -7,8 +7,8 @@
 
 ## Arte
 
-- Los sprites de la v0.1 son **propios o encargados**. Mientras no exista el arte final, el repositorio usa placeholders dibujados por código.
-- Las imágenes de referencia (`Bosque isométrico.jpg`, `Disposición de la página.jpg`, `Jardín flotante pixelado al atardecer.png`) **no se distribuyen** con la app: son referencia visual y viven fuera de `focus-forest/`.
+- Los sprites de la v0.1 son **propios o encargados**. Con el atlas integrado, el repositorio ya no usa el placeholder para los árboles.
+- Las imágenes de referencia (`Bosque isométrico.jpg`, `Disposición de la página.jpg`) **no se distribuyen** con la app: son referencia visual y viven fuera de `focus-forest/`.
 - No se usan hojas de sprites de terceros sin una licencia compatible y registrada acá.
 
 ## Código

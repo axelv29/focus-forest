@@ -1,13 +1,15 @@
 # Sprites
 
-Acá van los assets finales. Mientras no existan, `drawGarden` dibuja árboles placeholder por código y no pide ningún archivo, así que no hay errores 404.
+Acá van los assets finales del pino.
 
-## Atlas
+## Assets
 
-- `atlas.png`: una sola imagen con los 8 frames.
-- `atlas.json`: la posición de cada frame.
+- `pino_atlas.png` + `pino_atlas.json`: los 4 frames de árboles vivos.
+- `pino_muerto_atlas.png` + `pino_muerto_atlas.json`: los 4 frames de árboles marchitos.
 
-Cada etapa tiene un frame vivo y uno marchito. Los nombres que usa el render son:
+## Frames
+
+El render normaliza los nombres a:
 
 | Etapa | Vivo | Marchito |
 | --- | --- | --- |
@@ -16,24 +18,23 @@ Cada etapa tiene un frame vivo y uno marchito. Los nombres que usa el render son
 | Maduro | `tree.maduro` | `tree.maduro.withered` |
 | Adulto | `tree.adulto` | `tree.adulto.withered` |
 
-```json
-{
-  "frames": {
-    "tree.brote": { "x": 0, "y": 0, "w": 64, "h": 128 },
-    "tree.joven": { "x": 64, "y": 0, "w": 64, "h": 128 },
-    "tree.maduro": { "x": 128, "y": 0, "w": 64, "h": 128 },
-    "tree.adulto": { "x": 192, "y": 0, "w": 64, "h": 128 },
-    "tree.brote.withered": { "x": 256, "y": 0, "w": 64, "h": 128 },
-    "tree.joven.withered": { "x": 320, "y": 0, "w": 64, "h": 128 },
-    "tree.maduro.withered": { "x": 384, "y": 0, "w": 64, "h": 128 },
-    "tree.adulto.withered": { "x": 448, "y": 0, "w": 64, "h": 128 }
-  }
-}
-```
+- En los atlas de origen, los frames vivos se nombran con `pino_<etapa>_*`.
+- Los frames marchitos se nombran con `pino_muerto_<etapa>_*`.
+- El loader usa el número de etapa para mapear `1 → Brote`, `2 → Joven`, `3 → Maduro` y `4 → Adulto`.
 
-- Todos los frames comparten un lienzo de 64×128 y se anclan abajo al centro.
-- Al abandonar, se usa el frame marchito de la etapa alcanzada: un brote abandonado usa `tree.brote.withered`; un árbol adulto abandonado usa `tree.adulto.withered`.
-- Los archivos sueltos sirven como fuente editable; la página solo carga `atlas.png` + `atlas.json`.
-- `loadAtlas` en `src/render/sprites.ts` usa este formato. Cuando los dos archivos estén en esta carpeta, cambiar `SPRITES_ENABLED` a `true` en ese mismo archivo. Mientras esté en `false`, el render usa los placeholders y no pide ningún archivo.
-- Si tu atlas usa otros nombres, podés renombrar las claves del JSON o ajustar `TREE_STAGE_FRAME_NAMES` en `src/render/sprites.ts`.
+## Dimensiones y anclaje
+
+- Ambos atlas miden `122×89` px.
+- Los frames se dibujan a su tamaño nativo en la escena lógica, sin escalar el atlas completo.
+- El anclaje se lee de cada frame: por defecto queda abajo al centro; los archivos actuales usan `[w / 2, h]`.
+- El adulto mide `44×85`; el brote `13×12`.
+- La escena lógica sigue usando celda `64×32` y escala base `2×`.
+
+## Activación
+
+- `SPRITES_ENABLED = true` en `src/render/sprites.ts`.
+- Si falta un asset o un frame, `loadAtlas` devuelve `null` y el render usa los placeholders dibujados por código.
+
+## Licencia
+
 - No usar hojas de terceros sin una licencia compatible. Registrar todo en `LICENSES.md`.

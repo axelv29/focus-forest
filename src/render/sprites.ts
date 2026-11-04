@@ -5,15 +5,20 @@ export interface AtlasFrame {
   y: number
   w: number
   h: number
+  anchorX: number
+  anchorY: number
+  sheet: SheetName
 }
 
+export type SheetName = 'alive' | 'withered'
+
 export interface Atlas {
-  image: HTMLImageElement
+  images: Record<SheetName, HTMLImageElement>
   frames: Record<string, AtlasFrame>
 }
 
-/** Cambiar a true cuando existan `public/sprites/atlas.png` y `atlas.json`. */
-export const SPRITES_ENABLED = false
+/** Los dos atlas están en `public/sprites/`; si faltan, se usan placeholders. */
+export const SPRITES_ENABLED = true
 
 /** Nombre base de cada etapa viva; la versión marchita agrega `.withered`. */
 export const TREE_STAGE_FRAME_NAMES = {
@@ -28,6 +33,27 @@ export function treeFrameName(stage: TreeStage, state: TreeState): string {
   return state === 'withered' ? `${base}.withered` : base
 }
 
+interface RawFrame {
+  x: number
+  y: number
+  w: number
+  h: number
+  anchor?: [number, number]
+}
+
+const SHEETS = {
+  alive: {
+    image: '/sprites/pino_atlas.png',
+    meta: '/sprites/pino_atlas.json',
+    prefix: /^pino_([1-4])_/,
+  },
+  withered: {
+    image: '/sprites/pino_muerto_atlas.png',
+    meta: '/sprites/pino_muerto_atlas.json',
+    prefix: /^pino_muerto_([1-4])_/,
+  },
+} as const
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
@@ -37,46 +63,116 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   })
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isRawFrame(value: unknown): value is RawFrame {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const hasBox = ['x', 'y', 'w', 'h'].every((key) => typeof value[key] === 'number')
+  const anchor = value.anchor
+  const hasAnchor =
+    anchor === undefined ||
+    (Array.isArray(anchor) &&
+      anchor.length === 2 &&
+      anchor.every((coordinate) => typeof coordinate === 'number'))
+
+  return hasBox && hasAnchor
+}
+
+async function loadSheet(sheet: SheetName): Promise<{
+  sheet: SheetName
+  image: HTMLImageElement
+  frames: Record<string, RawFrame>
+}> {
+  const config = SHEETS[sheet]
+  const [response, image] = await Promise.all([fetch(config.meta), loadImage(config.image)])
+  if (!response.ok) {
+    throw new Error(`No se pudo cargar ${config.meta}`)
+  }
+
+  const raw = (await response.json()) as unknown
+  const frames = isRecord(raw) && isRecord(raw.frames) ? raw.frames : raw
+  if (!isRecord(frames)) {
+    throw new Error(`Formato inválido en ${config.meta}`)
+  }
+
+  return { sheet, image, frames: frames as Record<string, RawFrame> }
+}
+
 /**
- * Carga el atlas opcional. Si los assets todavía no existen, devuelve null
- * y el render usa los árboles placeholder dibujados por código.
+ * Carga los dos atlas y los normaliza a los nombres que usa el render.
+ * Si falta un archivo o un frame, devuelve null y se usan los placeholders.
  */
-export async function loadAtlas(
-  imageUrl = '/sprites/atlas.png',
-  metaUrl = '/sprites/atlas.json',
-): Promise<Atlas | null> {
+export async function loadAtlas(): Promise<Atlas | null> {
   try {
-    const response = await fetch(metaUrl)
-    if (!response.ok) {
+    const [alive, withered] = await Promise.all([loadSheet('alive'), loadSheet('withered')])
+    const frames: Record<string, AtlasFrame> = {}
+
+    for (const source of [alive, withered]) {
+      for (const [sourceName, raw] of Object.entries(source.frames)) {
+        if (!isRawFrame(raw)) {
+          continue
+        }
+
+        const match = sourceName.match(SHEETS[source.sheet].prefix)
+        if (!match) {
+          continue
+        }
+
+        const stage = Number(match[1]) as TreeStage
+        const frameName = treeFrameName(stage, source.sheet === 'alive' ? 'mature' : 'withered')
+        frames[frameName] = {
+          x: raw.x,
+          y: raw.y,
+          w: raw.w,
+          h: raw.h,
+          anchorX: raw.anchor?.[0] ?? raw.w / 2,
+          anchorY: raw.anchor?.[1] ?? raw.h,
+          sheet: source.sheet,
+        }
+      }
+    }
+
+    if (Object.keys(frames).length < 8) {
       return null
     }
 
-    const meta = (await response.json()) as { frames?: Record<string, AtlasFrame> }
-    if (!meta.frames) {
-      return null
-    }
-
-    const image = await loadImage(imageUrl)
-    return { image, frames: meta.frames }
+    return { images: { alive: alive.image, withered: withered.image }, frames }
   } catch {
     return null
   }
 }
 
+/**
+ * Dibuja un frame a su tamaño nativo, anclado abajo al centro por defecto.
+ * `baseX` y `baseY` son el punto de apoyo del árbol en la escena.
+ */
 export function drawAtlasFrame(
   ctx: CanvasRenderingContext2D,
   atlas: Atlas,
   name: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
+  baseX: number,
+  baseY: number,
 ): boolean {
   const frame = atlas.frames[name]
   if (!frame) {
     return false
   }
 
-  ctx.drawImage(atlas.image, frame.x, frame.y, frame.w, frame.h, x, y, width, height)
+  ctx.drawImage(
+    atlas.images[frame.sheet],
+    frame.x,
+    frame.y,
+    frame.w,
+    frame.h,
+    baseX - frame.anchorX,
+    baseY - frame.anchorY,
+    frame.w,
+    frame.h,
+  )
   return true
 }

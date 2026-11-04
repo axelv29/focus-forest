@@ -7,8 +7,8 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 - **Producto:** Focus Forest, una app web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada sesión de enfoque completada planta un árbol en una pradera isométrica.
 - **Stack ✅:** Vite + React + TypeScript + Tailwind CSS v4, dibujo con Canvas 2D, Zustand para el estado y Vitest para la lógica. Publicación en Vercel. Next.js se descarta (ver sección 3).
 - **Alcance de la v0.1 ✅:** enfoque de 25 minutos y descanso de 5, un árbol por sesión, 4 etapas de crecimiento, pradera de 8×8, estadísticas de hoy y totales, guardado local y contador de pomodoros sin meta.
-- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 64 ancho × 128 alto. Se descartan las celdas de 78×51 de las hojas de referencia.
-- **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas vivas y 4 versiones marchitas. Las imágenes de la carpeta son referencia visual, no assets.
+- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 44 ancho × 85 alto (atlas de 122×89 con frames recortados). Se descartan las celdas de 78×51 de las hojas de referencia.
+- **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas vivas y 4 versiones marchitas; los assets están en `public/sprites/`.
 - **Nombre ✅:** Focus Forest. Revisar antes de publicar por la proximidad con la app Forest.
 - **Plataforma ✅:** navegador de escritorio primero. Mobile queda para una versión posterior.
 
@@ -24,7 +24,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 | Al abandonar | El árbol queda marchito con la variante de su etapa y no acredita minutos |
 | Recarga | Reanuda; si el enfoque ya venció, completa; si el descanso venció, cierra |
 | Celdas | 64×32, grilla 8×8, escala 2× (escena 512×416 → 1024×832 en pantalla) |
-| Árbol adulto | 64 ancho × 128 alto; todas las etapas comparten lienzo |
+| Árbol adulto | 44 ancho × 85 alto; frames recortados por estado y dibujo a tamaño nativo |
 | Contador | "Pomodoros hoy: N", sin meta diaria |
 | Estadísticas | Hoy y totales; sin gráficos, rachas ni calendario |
 | Color | Paleta de la sección 9, sin colores fuera de ella |
@@ -73,8 +73,8 @@ Las opciones, comparadas:
 ## 5. Cómo mantenerla liviana y fluida
 
 - **Un solo canvas y redibujo bajo demanda:** se vuelve a dibujar cuando cambia una etapa o se planta un árbol, no 60 veces por segundo. El crecimiento va por umbrales de minutos, así que no necesita animación continua.
-- **Atlas de sprites:** todos los sprites en una única imagen PNG con un archivo que indica dónde está cada uno. Se carga una sola vez. Mientras no exista el arte final, el render usa placeholders dibujados por código y no pide el atlas.
-- **Etapas con el mismo lienzo:** las 4 etapas vivas y sus 4 versiones marchitas comparten un lienzo de 64×128 y se anclan abajo al centro. Así el atlas tiene 8 frames y el dibujo no cambia de anclaje.
+- **Atlas de sprites:** los assets viven en `public/sprites/`: cada estado usa su propio atlas de pino y sus frames recortados. Se cargan una sola vez; si falta uno, se usan placeholders dibujados por código.
+- **Etapas con el mismo anclaje:** las 4 versiones vivas y sus 4 versiones marchitas se dibujan a tamaño nativo desde sus frames recortados y se anclan abajo al centro. Los atlas miden `122×89`.
 - **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px nominales; el canvas de dibujo tiene 2× de margen para que el zoom pueda desbordar el recuadro sin cortar la isla.
 - **Imágenes optimizadas:** PNG comprimidos y solo los sprites que se usan.
 - **Dos fuentes como máximo,** servidas localmente, con alternativa del sistema mientras cargan.
@@ -120,8 +120,10 @@ focus-forest/
     PLAN.md                este plan y guía de estilo
     THEMING.md             sistema de tema visual
   public/
-    sprites/atlas.png      todos los sprites en una imagen
-    sprites/atlas.json     posición de cada sprite en el atlas
+    sprites/pino_atlas.png  4 frames vivos
+    sprites/pino_atlas.json  frames vivos
+    sprites/pino_muerto_atlas.png  4 frames marchitos
+    sprites/pino_muerto_atlas.json frames marchitos
   src/
     main.tsx               arranque de la app
     App.tsx                pantalla principal
@@ -147,7 +149,7 @@ focus-forest/
       zoom.ts              límites, pasos y formato del zoom
     render/
       iso.ts               de celda a pantalla y orden de dibujo
-      sprites.ts           carga del atlas
+      sprites.ts           carga de los atlas de pino y dibujo de frames
       drawGarden.ts        dibuja la pradera, los árboles y el zoom
     hooks/
       useCountdown.ts      tick de 0.5 s para la interfaz
@@ -262,7 +264,7 @@ Antes de darla por buena, se compara con la pradera de referencia y se comprueba
 ## 10. Riesgos y temas abiertos
 
 - **Nombre:** "Focus Forest" se parece a la app Forest. Para publicar o monetizar conviene un nombre más distintivo. No bloquea el desarrollo.
-- **Arte:** las imágenes de la carpeta son referencia, no assets. El arte final debe ser propio o encargado, con licencia clara; registrar todo en `LICENSES.md`.
+- **Arte:** los assets actuales son los sprites de `public/sprites/`; si se usa un arte final, debe ser propio o encargado, con licencia clara; registrar todo en `LICENSES.md`.
 - **Mobile:** el layout completo queda para después. Cuando se encare, decidir entre escala 1× o una vista recortada.
 - **Grilla llena:** con 64 árboles adultos no entra una sesión nueva. Los marchitos se reemplazan por el más viejo; si solo hay adultos, se muestra un aviso. Las parcelas nuevas llegan en la v0.2.
 - **Alcance:** no sumar funciones fuera de la ficha v0.1 hasta cerrarla.
@@ -274,7 +276,7 @@ Antes de darla por buena, se compara con la pradera de referencia y se comprueba
 | 0. Documentos | plan actualizado, `FICHA_v0.1.md`, `CONTEXTO.md` |
 | 1. Andamiaje | Vite, Tailwind, Vitest, oxlint/Prettier, CI |
 | 2. Dominio | tipos, configuración, timer, crecimiento, estadísticas, colocación y pruebas |
-| 3. Render | isometría, isla, atlas placeholder, `drawGarden` |
+| 3. Render | isometría, isla, atlas de sprites, `drawGarden` |
 | 4. Estado | store, persistencia v1, migración, selectores |
 | 5. Interfaz | Bosque, Estadísticas, timer, tarjeta, aviso y descanso |
 | 6. Pulido | accesibilidad, contraste, movimiento reducido, tema centralizado, zoom, README y publicación |
