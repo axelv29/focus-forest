@@ -56,6 +56,7 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, pixelWidth, pixelHeight)
   ctx.imageSmoothingEnabled = false
+  ctx.imageSmoothingQuality = 'high'
   ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
   drawIsland(ctx)
