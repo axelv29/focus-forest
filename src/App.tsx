@@ -43,7 +43,7 @@ function App() {
   const showConfirm = active !== null && active.kind === 'focus' && confirmFor === active.id
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-ink">
+    <div className="min-h-screen overflow-hidden bg-background text-ink">
       <header className="relative z-30 mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-3">
         <h1 className="app-title">FOCUS FOREST</h1>
 
