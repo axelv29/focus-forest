@@ -61,6 +61,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Una sesión de enfoque completada termina en etapa 4.
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
 - Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
+- La nueva celda se elige aleatoriamente entre libres con espaciamiento mínimo; si no quedan candidatas, se reemplaza el marchito más viejo.
 
 ### Datos
 

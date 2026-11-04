@@ -144,7 +144,7 @@ focus-forest/
       timer.ts             restante, pausa, reanudar, vencimiento
       growth.ts            minutos → etapa
       stats.ts             hoy y totales
-      placement.ts         siguiente celda libre, centro hacia afuera
+      placement.ts         siguiente celda libre aleatoria y espaciada
       day.ts               día local
       zoom.ts              límites, pasos y formato del zoom
     render/

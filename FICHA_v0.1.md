@@ -90,7 +90,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - **Tiempo:** todo en epoch ms. El restante se calcula con `endsAt - now`; nunca se resta un contador. La pausa corre `endsAt` y no cuenta como enfoque.
 - **Día local:** "hoy" se calcula con los getters locales de `Date`, nunca con `toISOString()`.
 - **Etapas:** `0 → 1`, `5 → 2`, `15 → 3`, `25 → 4`. Una sesión de enfoque completada siempre termina en etapa 4.
-- **Colocación:** centro hacia afuera. Los marchitos ocupan celda. Si la grilla se llena, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio con un aviso.
+- **Colocación:** aleatoria entre celdas libres con espaciamiento mínimo. Los marchitos ocupan celda. Si la grilla no tiene candidatas libres espaciadas, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio con un aviso.
 - **Persistencia:** clave `focus-forest`, versión 1, migración preparada. Datos corruptos: copia de respaldo y reinicio. Versión más nueva: aviso, sin borrar.
 - **Estadísticas:** solo enfoques completados. "Hoy" usa `endedAt` en día local. Los abandonos y los descansos no suman.
 - **Canvas:** nominal 1024×832 CSS (escena lógica 512×416: grilla 512×256 + 128 de margen superior + 32 de tierra), escala base 2×, sin suavizado, redibujo al cambiar etapa, árboles o zoom. Se dibuja con un margen de 2× (2048×1664) para que el zoom máximo no corte la isla en los bordes.
@@ -106,7 +106,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - [ ] El descanso dura 5 minutos, se puede saltar y no planta árbol ni suma estadísticas.
 - [ ] Recargar a mitad de enfoque reanuda; si venció, completa; si el descanso venció, cierra.
 - [ ] "Hoy" y los totales cuentan solo enfoques completados, con el día local correcto.
-- [ ] El jardín se llena de centro hacia afuera; con 64 adultos avisa que está lleno.
+- [ ] El jardín se llena aleatoriamente con espaciamiento; con 64 adultos avisa que está lleno.
 - [ ] Recargar conserva jardín, sesión y estadísticas; datos corruptos no rompen la app.
 - [ ] En 1440×900 se ve el layout de escritorio sin scroll horizontal; a 360 px no se rompe.
 - [ ] El zoom de la pradera funciona entre 0.5× y 2× sin afectar el timer ni el estado, y la isla puede desbordar el recuadro sin cortarse.

@@ -35,16 +35,19 @@ describe('cellOrder', () => {
 })
 
 describe('nextFreeCell', () => {
-  it('elige la celda más cercana al centro', () => {
-    expect(nextFreeCell([])).toEqual({ col: 3, row: 3 })
+  it('elige una celda libre aleatoriamente', () => {
+    expect(nextFreeCell([], 8, 8, () => 0)).toEqual({ col: 3, row: 3 })
+    expect(nextFreeCell([], 8, 8, () => 0.999)).not.toEqual({ col: 3, row: 3 })
   })
 
   it('salta las celdas ocupadas', () => {
-    expect(nextFreeCell([{ col: 3, row: 3 }])).toEqual({ col: 4, row: 3 })
+    const cell = nextFreeCell([{ col: 3, row: 3 }], 8, 8, () => 0)
+
+    expect(cell).not.toEqual({ col: 3, row: 3 })
   })
 
   it('devuelve null cuando la grilla está llena', () => {
-    expect(nextFreeCell(cellOrder())).toBeNull()
+    expect(nextFreeCell(cellOrder(), 8, 8, () => 0)).toBeNull()
   })
 })
 
@@ -58,11 +61,12 @@ describe('isCellInside', () => {
 })
 
 describe('choosePlacement', () => {
-  it('usa una celda libre aunque haya marchitos', () => {
+  it('planta en una celda libre aunque haya marchitos', () => {
     const trees = [treeAt('withered', { col: 0, row: 0 }, 'withered', 1)]
-    const placement = choosePlacement(trees)
+    const placement = choosePlacement(trees, () => 0)
 
-    expect(placement).toEqual({ cell: { col: 3, row: 3 }, replacedTreeId: null })
+    expect(placement?.replacedTreeId).toBeNull()
+    expect(placement?.cell).not.toEqual(trees[0].cell)
   })
 
   it('reemplaza el marchito más viejo cuando la grilla está llena', () => {
