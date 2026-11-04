@@ -7,8 +7,8 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 - **Producto:** Focus Forest, una app web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada sesión de enfoque completada planta un árbol en una pradera isométrica.
 - **Stack ✅:** Vite + React + TypeScript + Tailwind CSS v4, dibujo con Canvas 2D, Zustand para el estado y Vitest para la lógica. Publicación en Vercel. Next.js se descarta (ver sección 3).
 - **Alcance de la v0.1 ✅:** enfoque de 25 minutos y descanso de 5, un árbol por sesión, 4 etapas de crecimiento, pradera de 8×8, estadísticas de hoy y totales, guardado local y contador de pomodoros sin meta.
-- **Tamaño de celda ✅:** 64×32 px, con árbol maduro de 64 ancho × 128 alto. Se descartan las celdas de 78×51 de las hojas de referencia.
-- **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas y un marchito. Las imágenes de la carpeta son referencia visual, no assets.
+- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 64 ancho × 128 alto. Se descartan las celdas de 78×51 de las hojas de referencia.
+- **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas vivas y 4 versiones marchitas. Las imágenes de la carpeta son referencia visual, no assets.
 - **Nombre ✅:** Focus Forest. Revisar antes de publicar por la proximidad con la app Forest.
 - **Plataforma ✅:** navegador de escritorio primero. Mobile queda para una versión posterior.
 
@@ -19,12 +19,12 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 | Modelo de crecimiento | Un árbol por sesión; no se acumulan minutos entre sesiones |
 | Enfoque | 25 minutos fijos |
 | Descanso | 5 minutos, ofrecido con botón; nunca arranca solo |
-| Etapas | 0 brote, 5 joven, 15 mediano, 25 maduro |
-| Al completar | El árbol maduro queda en la pradera y la sesión se registra |
-| Al abandonar | El árbol queda marchito y no acredita minutos |
+| Etapas | 0 brote, 5 joven, 15 maduro, 25 adulto |
+| Al completar | El árbol adulto queda en la pradera y la sesión se registra |
+| Al abandonar | El árbol queda marchito con la variante de su etapa y no acredita minutos |
 | Recarga | Reanuda; si el enfoque ya venció, completa; si el descanso venció, cierra |
 | Celdas | 64×32, grilla 8×8, escala 2× (escena 512×416 → 1024×832 en pantalla) |
-| Árbol maduro | 64 ancho × 128 alto; todas las etapas comparten lienzo |
+| Árbol adulto | 64 ancho × 128 alto; todas las etapas comparten lienzo |
 | Contador | "Pomodoros hoy: N", sin meta diaria |
 | Estadísticas | Hoy y totales; sin gráficos, rachas ni calendario |
 | Color | Paleta de la sección 9, sin colores fuera de ella |
@@ -74,7 +74,7 @@ Las opciones, comparadas:
 
 - **Un solo canvas y redibujo bajo demanda:** se vuelve a dibujar cuando cambia una etapa o se planta un árbol, no 60 veces por segundo. El crecimiento va por umbrales de minutos, así que no necesita animación continua.
 - **Atlas de sprites:** todos los sprites en una única imagen PNG con un archivo que indica dónde está cada uno. Se carga una sola vez. Mientras no exista el arte final, el render usa placeholders dibujados por código y no pide el atlas.
-- **Etapas con el mismo lienzo:** las 4 etapas y el marchito comparten un lienzo de 64×128 y se anclan abajo al centro. Así el atlas es chico y el dibujo no cambia de anclaje.
+- **Etapas con el mismo lienzo:** las 4 etapas vivas y sus 4 versiones marchitas comparten un lienzo de 64×128 y se anclan abajo al centro. Así el atlas tiene 8 frames y el dibujo no cambia de anclaje.
 - **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px nominales; el canvas de dibujo tiene 2× de margen para que el zoom pueda desbordar el recuadro sin cortar la isla.
 - **Imágenes optimizadas:** PNG comprimidos y solo los sprites que se usan.
 - **Dos fuentes como máximo,** servidas localmente, con alternativa del sistema mientras cargan.
@@ -88,9 +88,9 @@ Las opciones, comparadas:
 
 - **Sesión de enfoque:** 25 minutos fijos. Empezar, pausar, reanudar y abandonar. La cuenta se calcula con hora de inicio y fin, no restando segundos.
 - **Descanso:** 5 minutos fijos. Se ofrece al completar el enfoque con un botón; no arranca solo. Se puede pausar o saltar. No planta árbol ni suma estadísticas.
-- **Crecimiento:** 4 etapas dentro de los 25 minutos: brote (0), joven (5), mediano (15) y maduro (25). Al abandonar, el árbol queda marchito.
+- **Crecimiento:** 4 etapas dentro de los 25 minutos: brote (0), joven (5), maduro (15) y adulto (25). Al abandonar, el árbol queda marchito con la variante de la etapa alcanzada.
 - **Pradera:** grilla isométrica de 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante.
-- **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles maduros y marchitos. Sin gráficos.
+- **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
 - **Interfaz:** vista Bosque y vista Estadísticas. Durante la sesión se esconden los paneles y quedan el timer, pausa y abandonar.
 - **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. No cambia el timer, los árboles ni las estadísticas.
@@ -264,7 +264,7 @@ Antes de darla por buena, se compara con la pradera de referencia y se comprueba
 - **Nombre:** "Focus Forest" se parece a la app Forest. Para publicar o monetizar conviene un nombre más distintivo. No bloquea el desarrollo.
 - **Arte:** las imágenes de la carpeta son referencia, no assets. El arte final debe ser propio o encargado, con licencia clara; registrar todo en `LICENSES.md`.
 - **Mobile:** el layout completo queda para después. Cuando se encare, decidir entre escala 1× o una vista recortada.
-- **Grilla llena:** con 64 árboles maduros no entra una sesión nueva. Los marchitos se reemplazan por el más viejo; si solo hay maduros, se muestra un aviso. Las parcelas nuevas llegan en la v0.2.
+- **Grilla llena:** con 64 árboles adultos no entra una sesión nueva. Los marchitos se reemplazan por el más viejo; si solo hay adultos, se muestra un aviso. Las parcelas nuevas llegan en la v0.2.
 - **Alcance:** no sumar funciones fuera de la ficha v0.1 hasta cerrarla.
 
 ## 11. Próximos pasos

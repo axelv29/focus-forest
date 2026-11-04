@@ -4,7 +4,7 @@ Documento de alcance y aceptación de la primera versión. Si algo no está acá
 
 ## 1. Objetivo
 
-Una app web de escritorio donde una persona completa pomodoros de 25 minutos y ve crecer un pino en una pradera isométrica. Completar una sesión deja un árbol maduro; abandonarla deja un árbol marchito. Todo se guarda en el navegador.
+Una app web de escritorio donde una persona completa pomodoros de 25 minutos y ve crecer un pino en una pradera isométrica. Completar una sesión deja un árbol adulto; abandonarla deja la versión marchita de la etapa alcanzada. Todo se guarda en el navegador.
 
 ## 2. Alcance
 
@@ -13,7 +13,7 @@ Una app web de escritorio donde una persona completa pomodoros de 25 minutos y v
 | Enfoque fijo de 25 minutos | Duraciones 15/45/60 o personalizadas |
 | Descanso fijo de 5 minutos, ofrecido con botón | Descanso largo o ciclo automático |
 | Un árbol por sesión completada | Árbol acumulativo entre sesiones |
-| 4 etapas: brote, joven, mediano, maduro | Especies extra, rarezas, semillas |
+| 4 etapas: brote, joven, maduro, adulto | Especies extra, rarezas, semillas |
 | Pradera 8×8 con isla flotante | Editar, mover o quitar árboles; parcelas bloqueadas |
 | Zoom de vista de la pradera (0.5×–2×) | Ajustes de usuario, modo oscuro, selector de temas |
 | Pausa, reanudar y abandonar | Tienda, monedas, economía |
@@ -22,17 +22,17 @@ Una app web de escritorio donde una persona completa pomodoros de 25 minutos y v
 | Contador "Pomodoros hoy: N" | Meta diaria fija o configurable |
 | Aviso al completar | Sonido, notificaciones del navegador |
 | Vista Bosque y vista Estadísticas | Ajustes, modo oscuro, PWA, álbum |
-| Una especie: pino, 4 etapas + marchito | Tres especies |
+| Una especie: pino, 4 etapas vivas + 4 marchitas | Tres especies |
 | Escritorio primero | Layout mobile completo |
 
 ## 3. Flujo
 
 1. **Inicio:** pradera centrada, timer en 25:00, botón **Iniciar** y contador "Pomodoros hoy: N".
 2. **Empezar enfoque:** se reserva la siguiente celda libre y aparece el brote. El timer corre.
-3. **Crecimiento:** a los 5 minutos el árbol es joven, a los 15 mediano y a los 25 maduro. El canvas se redibuja solo al cambiar de etapa.
-4. **Completar:** el árbol maduro queda en la pradera, se registra la sesión, aparece un aviso y se ofrece **Empezar descanso** o **Saltar**.
+3. **Crecimiento:** a los 5 minutos el árbol es joven, a los 15 maduro y a los 25 adulto. El canvas se redibuja solo al cambiar de etapa.
+4. **Completar:** el árbol adulto queda en la pradera, se registra la sesión, aparece un aviso y se ofrece **Empezar descanso** o **Saltar**.
 5. **Descanso:** timer de 5:00, sin árbol. Se puede pausar o saltar. Al terminar, vuelve al inicio.
-6. **Abandonar:** pide confirmación; el árbol queda marchito, no acredita minutos y no hay mensaje de castigo.
+6. **Abandonar:** pide confirmación; el árbol queda marchito con la variante de su etapa, no acredita minutos y no hay mensaje de castigo.
 7. **Recargar:** si el enfoque sigue corriendo, se reanuda; si ya venció, se completa. Si el descanso venció, se cierra.
 8. **Zoom:** la pradera se puede acercar o alejar entre 0.5× y 2× con el slider, los botones o la rueda del mouse. Es una vista de sesión: no cambia el timer, los árboles ni los datos guardados.
 
@@ -90,7 +90,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - **Tiempo:** todo en epoch ms. El restante se calcula con `endsAt - now`; nunca se resta un contador. La pausa corre `endsAt` y no cuenta como enfoque.
 - **Día local:** "hoy" se calcula con los getters locales de `Date`, nunca con `toISOString()`.
 - **Etapas:** `0 → 1`, `5 → 2`, `15 → 3`, `25 → 4`. Una sesión de enfoque completada siempre termina en etapa 4.
-- **Colocación:** centro hacia afuera. Los marchitos ocupan celda. Si la grilla se llena, se reemplaza el marchito más viejo; si solo hay maduros, se bloquea el inicio con un aviso.
+- **Colocación:** centro hacia afuera. Los marchitos ocupan celda. Si la grilla se llena, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio con un aviso.
 - **Persistencia:** clave `focus-forest`, versión 1, migración preparada. Datos corruptos: copia de respaldo y reinicio. Versión más nueva: aviso, sin borrar.
 - **Estadísticas:** solo enfoques completados. "Hoy" usa `endedAt` en día local. Los abandonos y los descansos no suman.
 - **Canvas:** nominal 1024×832 CSS (escena lógica 512×416: grilla 512×256 + 128 de margen superior + 32 de tierra), escala base 2×, sin suavizado, redibujo al cambiar etapa, árboles o zoom. Se dibuja con un margen de 2× (2048×1664) para que el zoom máximo no corte la isla en los bordes.
@@ -100,13 +100,13 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 ## 6. Criterios de aceptación
 
 - [ ] Iniciar, pausar, reanudar y abandonar (con confirmación) funcionan.
-- [ ] Abandonar deja un árbol marchito y no suma minutos.
+- [ ] Abandonar deja el árbol marchito de su etapa y no suma minutos.
 - [ ] Las etapas aparecen a los 5, 15 y 25 minutos; el canvas no se redibuja cada segundo.
-- [ ] Completar deja un árbol maduro, muestra el aviso y ofrece el descanso.
+- [ ] Completar deja un árbol adulto, muestra el aviso y ofrece el descanso.
 - [ ] El descanso dura 5 minutos, se puede saltar y no planta árbol ni suma estadísticas.
 - [ ] Recargar a mitad de enfoque reanuda; si venció, completa; si el descanso venció, cierra.
 - [ ] "Hoy" y los totales cuentan solo enfoques completados, con el día local correcto.
-- [ ] El jardín se llena de centro hacia afuera; con 64 maduros avisa que está lleno.
+- [ ] El jardín se llena de centro hacia afuera; con 64 adultos avisa que está lleno.
 - [ ] Recargar conserva jardín, sesión y estadísticas; datos corruptos no rompen la app.
 - [ ] En 1440×900 se ve el layout de escritorio sin scroll horizontal; a 360 px no se rompe.
 - [ ] El zoom de la pradera funciona entre 0.5× y 2× sin afectar el timer ni el estado, y la isla puede desbordar el recuadro sin cortarse.
@@ -115,10 +115,10 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 
 ## 7. Casos borde
 
-- **Enfoque vencido mientras la pestaña estaba cerrada:** se completa al volver, con el árbol maduro.
+- **Enfoque vencido mientras la pestaña estaba cerrada:** se completa al volver, con el árbol adulto.
 - **Descanso vencido mientras la pestaña estaba cerrada:** se cierra sin aviso.
 - **Pausa y recarga:** el restante no avanza mientras está pausado.
-- **Grilla llena de maduros:** no se puede iniciar; aviso claro.
+- **Grilla llena de adultos:** no se puede iniciar; aviso claro.
 - **Grilla llena con marchitos:** el nuevo árbol reemplaza al marchito más viejo.
 - **Datos corruptos o versión desconocida:** respaldo y reinicio, o aviso sin borrar.
 - **localStorage bloqueado:** estado en memoria y aviso; la app sigue usable.

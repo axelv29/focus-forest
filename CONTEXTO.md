@@ -57,10 +57,10 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Crecimiento
 
-- 4 etapas: 0 brote, 5 joven, 15 mediano, 25 maduro.
+- 4 etapas: 0 brote, 5 joven, 15 maduro, 25 adulto.
 - Una sesión de enfoque completada termina en etapa 4.
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
-- Abandonar deja un árbol marchito, con 0 minutos acreditados.
+- Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
 
 ### Datos
 
@@ -75,7 +75,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - `x = origenX + (col - row) * 32`
 - `y = origenY + (col + row) * 16`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
-- Sprites anclados abajo al centro; todas las etapas usan lienzo 64×128.
+- Sprites anclados abajo al centro; las 4 etapas usan 8 frames de 64×128 (vivo y marchito por etapa).
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
 - Redibujar al cambiar etapa, árboles o zoom; no en cada tick del timer.
 

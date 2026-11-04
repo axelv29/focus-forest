@@ -1,3 +1,5 @@
+import type { TreeStage, TreeState } from '@/state/types'
+
 export interface AtlasFrame {
   x: number
   y: number
@@ -13,13 +15,18 @@ export interface Atlas {
 /** Cambiar a true cuando existan `public/sprites/atlas.png` y `atlas.json`. */
 export const SPRITES_ENABLED = false
 
-export const TREE_FRAME_NAMES = {
-  1: 'tree.pine.1',
-  2: 'tree.pine.2',
-  3: 'tree.pine.3',
-  4: 'tree.pine.4',
-  withered: 'tree.withered',
-} as const
+/** Nombre base de cada etapa viva; la versión marchita agrega `.withered`. */
+export const TREE_STAGE_FRAME_NAMES = {
+  1: 'tree.brote',
+  2: 'tree.joven',
+  3: 'tree.maduro',
+  4: 'tree.adulto',
+} as const satisfies Record<TreeStage, string>
+
+export function treeFrameName(stage: TreeStage, state: TreeState): string {
+  const base = TREE_STAGE_FRAME_NAMES[stage]
+  return state === 'withered' ? `${base}.withered` : base
+}
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

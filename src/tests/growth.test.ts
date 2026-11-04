@@ -34,7 +34,7 @@ describe('stageLabel', () => {
   it('devuelve la etiqueta de cada etapa', () => {
     expect(stageLabel(1)).toBe('Brote')
     expect(stageLabel(2)).toBe('Joven')
-    expect(stageLabel(3)).toBe('Mediano')
-    expect(stageLabel(4)).toBe('Maduro')
+    expect(stageLabel(3)).toBe('Maduro')
+    expect(stageLabel(4)).toBe('Adulto')
   })
 })

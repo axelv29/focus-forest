@@ -14,7 +14,7 @@ import {
 import { clampZoom } from '@/logic/zoom'
 import type { Cell, Tree, TreeStage, TreeState } from '@/state/types'
 import { cellToScreen, sortByDepth } from './iso'
-import { drawAtlasFrame, TREE_FRAME_NAMES, type Atlas } from './sprites'
+import { drawAtlasFrame, treeFrameName, type Atlas } from './sprites'
 
 export interface ActiveTreePreview {
   cell: Cell
@@ -174,8 +174,7 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   ctx.restore()
 
   if (atlas) {
-    const frameName =
-      tree.state === 'withered' ? TREE_FRAME_NAMES.withered : TREE_FRAME_NAMES[tree.stage]
+    const frameName = treeFrameName(tree.stage, tree.state)
     const drawn = drawAtlasFrame(ctx, atlas, frameName, x - 32, baseY - 128, 64, 128)
     if (drawn) {
       return
@@ -183,7 +182,7 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   }
 
   if (tree.state === 'withered') {
-    drawWithered(ctx, x, baseY)
+    drawWithered(ctx, x, baseY, tree.stage)
   } else {
     drawPine(ctx, x, baseY, tree.stage)
   }
@@ -233,8 +232,13 @@ function drawPine(
   ctx.restore()
 }
 
-function drawWithered(ctx: CanvasRenderingContext2D, cx: number, baseY: number): void {
-  const scale = 0.9
+function drawWithered(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  baseY: number,
+  stage: TreeStage,
+): void {
+  const scale = 0.9 * STAGE_SCALE[stage]
 
   ctx.save()
   ctx.translate(cx, baseY)

@@ -29,14 +29,14 @@ export function StatsPanel({ now }: { now: number }) {
         <StatCard
           label="Árboles"
           value={`${stats.matureTrees}`}
-          unit="maduros"
+          unit="adultos"
           detail={`${stats.witheredTrees} marchitos`}
         />
         <StatCard
           label="Pradera"
           value={`${stats.matureTrees + stats.witheredTrees}`}
           unit={`de ${totalCells} celdas`}
-          detail="Los árboles maduros ocupan su lugar"
+          detail="Los árboles adultos ocupan su lugar"
         />
       </div>
 
