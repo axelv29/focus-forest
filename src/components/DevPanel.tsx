@@ -63,7 +63,10 @@ export function DevPanel() {
       </button>
 
       {open && (
-        <section className="card card--compact mt-2" aria-label="Panel de desarrollo">
+        <section
+          className="card card--compact mt-2 max-h-[70vh] overflow-y-auto"
+          aria-label="Panel de desarrollo"
+        >
           <p className="eyebrow">DEV</p>
           <p className="type-body mt-1">Pruebas rápidas del bosque.</p>
 
