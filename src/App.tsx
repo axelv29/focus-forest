@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { BreakPrompt } from '@/components/BreakPrompt'
 import { CompletionToast } from '@/components/CompletionToast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { DevPanel } from '@/components/DevPanel'
 import { GardenCanvas } from '@/components/GardenCanvas'
 import { SessionCard } from '@/components/SessionCard'
 import { StatsPanel } from '@/components/StatsPanel'
@@ -89,6 +90,8 @@ function App() {
           <StatsPanel now={now} />
         )}
       </main>
+
+      {import.meta.env.DEV && <DevPanel />}
 
       <CompletionToast />
       <BreakPrompt />
