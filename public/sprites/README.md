@@ -6,6 +6,7 @@ Acá van los assets finales del pino.
 
 - `pino_atlas.png` + `pino_atlas.json`: los 4 frames de árboles vivos.
 - `pino_muerto_atlas.png` + `pino_muerto_atlas.json`: los 4 frames de árboles marchitos.
+- `pastosprite.png`: cubo de pasto; el render usa solo su cara superior de `64×32` en cada celda.
 
 ## Frames
 

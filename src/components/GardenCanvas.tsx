@@ -9,7 +9,7 @@ import {
 import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_BUTTON_STEP, ZOOM_SLIDER_STEP } from '@/config/zoom'
 import { clampZoom, formatZoom, stepZoom, zoomFromWheel } from '@/logic/zoom'
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
-import { loadAtlas, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
+import { loadAtlas, loadGroundTile, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
 import type { Tree } from '@/state/types'
 
 interface GardenCanvasProps {
@@ -22,6 +22,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gardenRef = useRef<HTMLDivElement>(null)
   const [atlas, setAtlas] = useState<Atlas | null>(null)
+  const [groundTile, setGroundTile] = useState<HTMLImageElement | null>(null)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
   const width = CANVAS_RENDER_WIDTH * dpr
@@ -33,9 +34,10 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     }
 
     let cancelled = false
-    loadAtlas().then((loaded) => {
+    Promise.all([loadAtlas(), loadGroundTile()]).then(([loadedAtlas, loadedTile]) => {
       if (!cancelled) {
-        setAtlas(loaded)
+        setAtlas(loadedAtlas)
+        setGroundTile(loadedTile)
       }
     })
 
@@ -62,8 +64,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       return
     }
 
-    drawGarden(ctx, { trees, active, atlas, zoom })
-  }, [trees, active, width, height, atlas, zoom])
+    drawGarden(ctx, { trees, active, atlas, groundTile, zoom })
+  }, [trees, active, width, height, atlas, groundTile, zoom])
 
   useEffect(() => {
     const garden = gardenRef.current

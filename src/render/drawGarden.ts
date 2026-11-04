@@ -25,6 +25,7 @@ export interface DrawGardenOptions {
   trees: readonly Tree[]
   active?: ActiveTreePreview | null
   atlas?: Atlas | null
+  groundTile?: HTMLImageElement | null
   zoom?: number
 }
 
@@ -58,8 +59,7 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
   ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
   drawIsland(ctx)
-  drawGrid(ctx)
-  drawIslandEdge(ctx)
+  drawGrid(ctx, options.groundTile ?? null)
 
   const trees: DrawableTree[] = options.trees.map((tree) => ({
     cell: tree.cell,
@@ -84,10 +84,6 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
   const leftX = 0
   const rightX = SCENE_WIDTH
 
-  ctx.lineJoin = 'miter'
-  ctx.lineWidth = 2
-  ctx.strokeStyle = '#554736'
-
   // Cara izquierda de la tierra.
   ctx.fillStyle = '#8b644a'
   polygon(ctx, [
@@ -97,7 +93,6 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
     [leftX, middleY + ISLAND_DEPTH],
   ])
   ctx.fill()
-  ctx.stroke()
 
   // Cara derecha, en sombra.
   ctx.fillStyle = '#6b4a36'
@@ -108,10 +103,9 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
     [centerX, bottomY + ISLAND_DEPTH],
   ])
   ctx.fill()
-  ctx.stroke()
 
   // Superficie de pasto.
-  ctx.fillStyle = '#8db65d'
+  ctx.fillStyle = '#4d9a50'
   polygon(ctx, [
     [centerX, topY],
     [rightX, middleY],
@@ -121,10 +115,11 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
   ctx.fill()
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D): void {
-  ctx.save()
-  ctx.strokeStyle = 'rgba(32, 63, 59, 0.26)'
-  ctx.lineWidth = 1.25
+function drawGrid(ctx: CanvasRenderingContext2D, groundTile: HTMLImageElement | null): void {
+  if (!groundTile) {
+    ctx.strokeStyle = 'rgba(32, 63, 59, 0.26)'
+    ctx.lineWidth = 1.25
+  }
 
   for (let row = 0; row < GRID_ROWS; row += 1) {
     for (let col = 0; col < GRID_COLS; col += 1) {
@@ -136,30 +131,21 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
       ctx.lineTo(x, y + TILE_HEIGHT / 2)
       ctx.lineTo(x - TILE_WIDTH / 2, y)
       ctx.closePath()
-      ctx.fillStyle = (col + row) % 2 === 0 ? '#8db65d' : '#85ab56'
-      ctx.fill()
-      ctx.stroke()
+
+      if (groundTile) {
+        // El sprite incluye las caras laterales del cubo; el clip deja
+        // únicamente la cara superior de 64×32 dentro de la celda.
+        ctx.save()
+        ctx.clip()
+        ctx.drawImage(groundTile, x - TILE_WIDTH / 2, y - TILE_HEIGHT / 2)
+        ctx.restore()
+      } else {
+        ctx.fillStyle = (col + row) % 2 === 0 ? '#8db65d' : '#85ab56'
+        ctx.fill()
+        ctx.stroke()
+      }
     }
   }
-
-  ctx.restore()
-}
-
-function drawIslandEdge(ctx: CanvasRenderingContext2D): void {
-  const topY = TOP_PADDING
-  const middleY = TOP_PADDING + GRID_PIXEL_HEIGHT / 2
-  const bottomY = TOP_PADDING + GRID_PIXEL_HEIGHT
-
-  ctx.strokeStyle = '#3a684f'
-  ctx.lineWidth = 3
-  ctx.lineJoin = 'miter'
-  polygon(ctx, [
-    [ORIGIN_X, topY],
-    [SCENE_WIDTH, middleY],
-    [ORIGIN_X, bottomY],
-    [0, middleY],
-  ])
-  ctx.stroke()
 }
 
 function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atlas | null): void {

@@ -20,6 +20,9 @@ export interface Atlas {
 /** Los dos atlas están en `public/sprites/`; si faltan, se usan placeholders. */
 export const SPRITES_ENABLED = true
 
+/** Tile de pasto: solo se usa su cara superior de 64×32. */
+export const GROUND_TILE_URL = '/sprites/pastosprite.png'
+
 /** Nombre base de cada etapa viva; la versión marchita agrega `.withered`. */
 export const TREE_STAGE_FRAME_NAMES = {
   1: 'tree.brote',
@@ -142,6 +145,15 @@ export async function loadAtlas(): Promise<Atlas | null> {
     }
 
     return { images: { alive: alive.image, withered: withered.image }, frames }
+  } catch {
+    return null
+  }
+}
+
+/** Carga el tile de pasto. Si falla, el render vuelve a la grilla procedural. */
+export async function loadGroundTile(): Promise<HTMLImageElement | null> {
+  try {
+    return await loadImage(GROUND_TILE_URL)
   } catch {
     return null
   }
