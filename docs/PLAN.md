@@ -7,7 +7,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 - **Producto:** Focus Forest, una app web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada sesión de enfoque completada planta un árbol en una pradera isométrica.
 - **Stack ✅:** Vite + React + TypeScript + Tailwind CSS v4, dibujo con Canvas 2D, Zustand para el estado y Vitest para la lógica. Publicación en Vercel. Next.js se descarta (ver sección 3).
 - **Alcance de la v0.1 ✅:** enfoque de 25 minutos y descanso de 5, un árbol por sesión, 4 etapas de crecimiento, pradera de 8×8, estadísticas de hoy y totales, guardado local y contador de pomodoros sin meta.
-- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 44 ancho × 85 alto (atlas de 122×89 con frames recortados). Se descartan las celdas de 78×51 de las hojas de referencia.
+- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 44 ancho × 89 alto (atlas de 122×92 con frames recortados). Se descartan las celdas de 78×51 de las hojas de referencia.
 - **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas vivas y 4 versiones marchitas; los assets están en `public/sprites/`.
 - **Nombre ✅:** Focus Forest. Revisar antes de publicar por la proximidad con la app Forest.
 - **Plataforma ✅:** navegador de escritorio primero. Mobile queda para una versión posterior.
@@ -24,7 +24,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 | Al abandonar | El árbol queda marchito con la variante de su etapa y no acredita minutos |
 | Recarga | Reanuda; si el enfoque ya venció, completa; si el descanso venció, cierra |
 | Celdas | 64×32, grilla 8×8, escala 2× (escena 512×416 → 1024×832 en pantalla) |
-| Árbol adulto | 44 ancho × 85 alto; frames recortados por estado y dibujo a tamaño nativo |
+| Árbol adulto | 44 ancho × 89 alto; frames recortados por estado y dibujo a tamaño nativo |
 | Contador | "Pomodoros hoy: N", sin meta diaria |
 | Estadísticas | Hoy y totales; sin gráficos, rachas ni calendario |
 | Color | Paleta de la sección 9, sin colores fuera de ella |
@@ -74,7 +74,7 @@ Las opciones, comparadas:
 
 - **Un solo canvas y redibujo bajo demanda:** se vuelve a dibujar cuando cambia una etapa o se planta un árbol, no 60 veces por segundo. El crecimiento va por umbrales de minutos, así que no necesita animación continua.
 - **Atlas de sprites:** los assets viven en `public/sprites/`: cada estado usa su propio atlas de pino y sus frames recortados. Se cargan una sola vez; si falta uno, se usan placeholders dibujados por código.
-- **Etapas con el mismo anclaje:** las 4 versiones vivas y sus 4 versiones marchitas se dibujan a tamaño nativo desde sus frames recortados y se anclan abajo al centro. Los atlas miden `122×89`.
+- **Etapas con el mismo anclaje:** las 4 versiones vivas y sus 4 versiones marchitas se dibujan a tamaño nativo desde sus frames recortados y se anclan en la base del tronco. La sombra pixelada va incluida en cada frame y puede sobresalir por debajo del ancla. Los atlas miden `122×92`.
 - **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px nominales; el canvas de dibujo tiene 2× de margen para que el zoom pueda desbordar el recuadro sin cortar la isla.
 - **Imágenes optimizadas:** PNG comprimidos y solo los sprites que se usan.
 - **Dos fuentes como máximo,** servidas localmente, con alternativa del sistema mientras cargan.

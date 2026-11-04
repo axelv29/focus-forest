@@ -166,6 +166,15 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   const { x, y } = cellToScreen(tree.cell)
   const baseY = y + 4
 
+  // Los atlas ya incluyen la sombra pixelada en cada frame.
+  if (atlas) {
+    const frameName = treeFrameName(tree.stage, tree.state)
+    if (drawAtlasFrame(ctx, atlas, frameName, x, baseY)) {
+      return
+    }
+  }
+
+  // Sombra procedural solo para los placeholders.
   const shadowScale = STAGE_SCALE[tree.stage]
 
   ctx.save()
@@ -174,13 +183,6 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   ctx.ellipse(x, y, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
-
-  if (atlas) {
-    const frameName = treeFrameName(tree.stage, tree.state)
-    if (drawAtlasFrame(ctx, atlas, frameName, x, baseY)) {
-      return
-    }
-  }
 
   if (tree.state === 'withered') {
     drawWithered(ctx, x, baseY, tree.stage)

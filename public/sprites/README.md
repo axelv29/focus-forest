@@ -24,10 +24,10 @@ El render normaliza los nombres a:
 
 ## Dimensiones y anclaje
 
-- Ambos atlas miden `122×89` px.
+- Ambos atlas miden `122×92` px.
 - Los frames se dibujan a su tamaño nativo en la escena lógica, sin escalar el atlas completo.
-- El anclaje se lee de cada frame: por defecto queda abajo al centro; los archivos actuales usan `[w / 2, h]`.
-- El adulto mide `44×85`; el brote `13×12`.
+- El anclaje se lee de cada frame y marca la base del tronco; la sombra pixelada queda dentro del frame y puede sobresalir por debajo del ancla.
+- El adulto mide `44×89`; el brote `13×13`.
 - La escena lógica sigue usando celda `64×32` y escala base `2×`.
 
 ## Activación

@@ -76,7 +76,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - `x = origenX + (col - row) * 32`
 - `y = origenY + (col + row) * 16`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
-- Sprites anclados abajo al centro; los atlas de 122×89 contienen 4 frames recortados por estado y se dibujan a tamaño nativo.
+- Sprites anclados en la base del tronco; los atlas de 122×92 contienen 4 frames recortados por estado, con la sombra pixelada incluida en cada frame, y se dibujan a tamaño nativo.
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
 - Redibujar al cambiar etapa, árboles o zoom; no en cada tick del timer.
 
