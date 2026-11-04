@@ -171,7 +171,7 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   ctx.save()
   ctx.fillStyle = 'rgba(32, 63, 59, 0.16)'
   ctx.beginPath()
-  ctx.ellipse(x, baseY + 2, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
+  ctx.ellipse(x, y, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 
