@@ -133,12 +133,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, groundTile: HTMLImageElement | 
       ctx.closePath()
 
       if (groundTile) {
-        // El sprite incluye las caras laterales del cubo; el clip deja
-        // únicamente la cara superior de 64×32 dentro de la celda.
-        ctx.save()
-        ctx.clip()
         ctx.drawImage(groundTile, x - TILE_WIDTH / 2, y - TILE_HEIGHT / 2)
-        ctx.restore()
       } else {
         ctx.fillStyle = (col + row) % 2 === 0 ? '#8db65d' : '#85ab56'
         ctx.fill()
