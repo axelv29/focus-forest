@@ -1,5 +1,4 @@
 import {
-  CANVAS_OVERSCAN,
   GRID_COLS,
   GRID_PIXEL_HEIGHT,
   GRID_ROWS,
@@ -11,7 +10,6 @@ import {
   TILE_WIDTH,
   TOP_PADDING,
 } from '@/config/grid'
-import { clampZoom } from '@/logic/zoom'
 import type { Cell, Tree, TreeStage, TreeState } from '@/state/types'
 import { cellToScreen, sortByDepth } from './iso'
 import { drawAtlasFrame, treeFrameName, type Atlas } from './sprites'
@@ -26,7 +24,6 @@ export interface DrawGardenOptions {
   active?: ActiveTreePreview | null
   atlas?: Atlas | null
   groundTile?: HTMLImageElement | null
-  zoom?: number
 }
 
 interface DrawableTree {
@@ -42,25 +39,32 @@ const STAGE_SCALE: Record<TreeStage, number> = {
   4: 1,
 }
 
+/** Vértice superior de `tileset8x8.png` dentro de la imagen. */
+const GROUND_SHEET_TOP_X = 252.5
+const GROUND_SHEET_TOP_Y = 2
+
 export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOptions): void {
   const pixelWidth = ctx.canvas.width
   const pixelHeight = ctx.canvas.height
-  const baseScale = Math.min(
-    pixelWidth / (SCENE_WIDTH * CANVAS_OVERSCAN),
-    pixelHeight / (SCENE_HEIGHT * CANVAS_OVERSCAN),
-  )
-  const scale = baseScale * clampZoom(options.zoom ?? 1)
-  const offsetX = (pixelWidth - SCENE_WIDTH * scale) / 2
-  const offsetY = (pixelHeight - SCENE_HEIGHT * scale) / 2
+  // El canvas ya tiene el tamaño exacto de la escena a una escala entera.
+  const scale = Math.min(pixelWidth / SCENE_WIDTH, pixelHeight / SCENE_HEIGHT)
+  const offsetX = Math.round((pixelWidth - SCENE_WIDTH * scale) / 2)
+  const offsetY = Math.round((pixelHeight - SCENE_HEIGHT * scale) / 2)
 
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, pixelWidth, pixelHeight)
   ctx.imageSmoothingEnabled = false
   ctx.imageSmoothingQuality = 'high'
-  ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
-  drawIsland(ctx)
-  drawGrid(ctx, options.groundTile ?? null)
+  if (options.groundTile) {
+    drawGroundSheet(ctx, options.groundTile, scale, offsetX, offsetY)
+  } else {
+    ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
+    drawIsland(ctx)
+    drawGrid(ctx)
+  }
+
+  ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
   const trees: DrawableTree[] = options.trees.map((tree) => ({
     cell: tree.cell,
@@ -116,11 +120,24 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
   ctx.fill()
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, groundTile: HTMLImageElement | null): void {
-  if (!groundTile) {
-    ctx.strokeStyle = 'rgba(32, 63, 59, 0.26)'
-    ctx.lineWidth = 1.25
-  }
+/** El suelo es una sola imagen 8×8; se dibuja con escala entera. */
+function drawGroundSheet(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  scale: number,
+  offsetX: number,
+  offsetY: number,
+): void {
+  const x = offsetX + (ORIGIN_X - GROUND_SHEET_TOP_X) * scale
+  const y = offsetY + (TOP_PADDING - GROUND_SHEET_TOP_Y) * scale
+
+  // Dibujar en píxeles físicos con traslación entera evita el shimmer al hacer zoom.
+  ctx.drawImage(image, Math.round(x), Math.round(y), image.width * scale, image.height * scale)
+}
+
+function drawGrid(ctx: CanvasRenderingContext2D): void {
+  ctx.strokeStyle = 'rgba(32, 63, 59, 0.26)'
+  ctx.lineWidth = 1.25
 
   for (let row = 0; row < GRID_ROWS; row += 1) {
     for (let col = 0; col < GRID_COLS; col += 1) {
@@ -133,13 +150,9 @@ function drawGrid(ctx: CanvasRenderingContext2D, groundTile: HTMLImageElement | 
       ctx.lineTo(x - TILE_WIDTH / 2, y)
       ctx.closePath()
 
-      if (groundTile) {
-        ctx.drawImage(groundTile, x - TILE_WIDTH / 2, y - TILE_HEIGHT / 2)
-      } else {
-        ctx.fillStyle = (col + row) % 2 === 0 ? '#8db65d' : '#85ab56'
-        ctx.fill()
-        ctx.stroke()
-      }
+      ctx.fillStyle = (col + row) % 2 === 0 ? '#8db65d' : '#85ab56'
+      ctx.fill()
+      ctx.stroke()
     }
   }
 }

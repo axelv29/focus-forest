@@ -6,7 +6,7 @@ Acá van los assets finales del pino.
 
 - `pino_atlas.png` + `pino_atlas.json`: los 4 frames de árboles vivos.
 - `pino_muerto_atlas.png` + `pino_muerto_atlas.json`: los 4 frames de árboles marchitos.
-- `pastosprite.png`: cubo de pasto; el render usa la textura completa (`64×32` de cara superior y caras laterales) en cada celda.
+- `tileset8x8.png`: suelo completo de la pradera 8×8; el render lo dibuja como una sola imagen, con escala base entera y zoom solo en escalas enteras.
 
 ## Frames
 
@@ -29,7 +29,7 @@ El render normaliza los nombres a:
 - Los frames se dibujan a su tamaño nativo en la escena lógica, sin escalar el atlas completo.
 - El anclaje se lee de cada frame y marca la base del tronco; la sombra pixelada queda dentro del frame y puede sobresalir por debajo del ancla.
 - El adulto mide `44×89`; el brote `13×13`.
-- La escena lógica sigue usando celda `64×32` y escala base `2×`.
+- La escena lógica usa celda `60×30` y escala base entera (1×, 2×…) según el contenedor; el zoom también se mantiene en escalas enteras.
 
 ## Activación
 

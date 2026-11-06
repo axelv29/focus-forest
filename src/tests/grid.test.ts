@@ -1,23 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CANVAS_HEIGHT,
-  CANVAS_OVERSCAN,
-  CANVAS_RENDER_HEIGHT,
-  CANVAS_RENDER_WIDTH,
-  CANVAS_WIDTH,
-  SCENE_HEIGHT,
-  SCENE_WIDTH,
-} from '@/config/grid'
-import { MAX_ZOOM } from '@/config/zoom'
+import { GRID_PIXEL_HEIGHT, ISLAND_DEPTH, SCENE_HEIGHT, TOP_PADDING } from '@/config/grid'
 
-describe('canvas de la pradera', () => {
-  it('deja margen suficiente para el zoom máximo', () => {
-    expect(CANVAS_OVERSCAN).toBeGreaterThanOrEqual(MAX_ZOOM)
-    expect(CANVAS_RENDER_WIDTH).toBeGreaterThanOrEqual(CANVAS_WIDTH * MAX_ZOOM)
-    expect(CANVAS_RENDER_HEIGHT).toBeGreaterThanOrEqual(CANVAS_HEIGHT * MAX_ZOOM)
-  })
-
-  it('mantiene la proporción de la escena', () => {
-    expect(CANVAS_RENDER_WIDTH / CANVAS_RENDER_HEIGHT).toBeCloseTo(SCENE_WIDTH / SCENE_HEIGHT)
+describe('escena de la pradera', () => {
+  it('reserva el margen superior y la profundidad de la isla', () => {
+    expect(SCENE_HEIGHT).toBe(TOP_PADDING + GRID_PIXEL_HEIGHT + ISLAND_DEPTH)
   })
 })

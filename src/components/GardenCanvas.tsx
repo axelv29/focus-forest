@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { SCENE_HEIGHT, SCENE_WIDTH } from '@/config/grid'
+import { DEFAULT_ZOOM, MAX_ZOOM, ZOOM_SLIDER_STEP } from '@/config/zoom'
 import {
-  CANVAS_HEIGHT,
-  CANVAS_OVERSCAN,
-  CANVAS_RENDER_HEIGHT,
-  CANVAS_RENDER_WIDTH,
-  CANVAS_WIDTH,
-} from '@/config/grid'
-import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_BUTTON_STEP, ZOOM_SLIDER_STEP } from '@/config/zoom'
-import { clampZoom, formatZoom, stepZoom, zoomFromWheel } from '@/logic/zoom'
+  fitPixelScale,
+  formatZoom,
+  minPixelPerfectZoom,
+  pixelPerfectZoom,
+  snapPixelScale,
+  stepPixelPerfectZoom,
+  zoomFromWheel,
+} from '@/logic/zoom'
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
 import { loadAtlas, loadGroundTile, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
 import type { Tree } from '@/state/types'
@@ -21,12 +23,31 @@ interface GardenCanvasProps {
 export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gardenRef = useRef<HTMLDivElement>(null)
+  const wheelZoomRef = useRef(DEFAULT_ZOOM)
   const [atlas, setAtlas] = useState<Atlas | null>(null)
   const [groundTile, setGroundTile] = useState<HTMLImageElement | null>(null)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
-  const dpr = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2)
-  const width = CANVAS_RENDER_WIDTH * dpr
-  const height = CANVAS_RENDER_HEIGHT * dpr
+  const [gardenSize, setGardenSize] = useState({ width: 0, height: 0 })
+  const dpr = typeof window === 'undefined' ? 1 : Math.max(1, window.devicePixelRatio || 1)
+
+  const hasGardenSize = gardenSize.width > 0 && gardenSize.height > 0
+  const idealBaseScale = hasGardenSize
+    ? Math.min((gardenSize.width * dpr) / SCENE_WIDTH, (gardenSize.height * dpr) / SCENE_HEIGHT)
+    : 1
+  const basePixelScale = fitPixelScale(idealBaseScale)
+  // No bajamos de 1:1 salvo que el propio contenedor sea más chico que la
+  // escena. Así el zoom-out nunca pierde píxeles por muestreo.
+  const minZoom = minPixelPerfectZoom(basePixelScale)
+  const pixelScale = snapPixelScale(basePixelScale * zoom)
+  // 2 px extra: el tileset tiene su vértice en un medio píxel y, al redondear
+  // la traslación, el borde derecho quedaría cortado medio píxel.
+  const canvasWidth = Math.max(1, Math.round(SCENE_WIDTH * pixelScale) + 2)
+  const canvasHeight = Math.max(1, Math.round(SCENE_HEIGHT * pixelScale))
+
+  const snapZoom = useCallback(
+    (value: number) => Math.max(minZoom, pixelPerfectZoom(value, basePixelScale)),
+    [basePixelScale, minZoom],
+  )
 
   useEffect(() => {
     if (!SPRITES_ENABLED) {
@@ -46,17 +67,46 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const garden = gardenRef.current
+    if (!garden) {
+      return
+    }
+
+    // La pradera ocupa el contenedor; el canvas puede ser más chico o más
+    // grande y se centra sin afectar el layout.
+    const updateSize = () => {
+      const rect = garden.getBoundingClientRect()
+      setGardenSize((current) =>
+        current.width === rect.width && current.height === rect.height
+          ? current
+          : { width: rect.width, height: rect.height },
+      )
+    }
+
+    updateSize()
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(garden)
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    const next = Math.max(minZoom, pixelPerfectZoom(wheelZoomRef.current, basePixelScale))
+    wheelZoomRef.current = next
+    setZoom(next)
+  }, [basePixelScale, minZoom])
+
+  useLayoutEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
       return
     }
 
-    if (canvas.width !== width) {
-      canvas.width = width
+    if (canvas.width !== canvasWidth) {
+      canvas.width = canvasWidth
     }
-    if (canvas.height !== height) {
-      canvas.height = height
+    if (canvas.height !== canvasHeight) {
+      canvas.height = canvasHeight
     }
 
     const ctx = canvas.getContext('2d')
@@ -64,8 +114,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       return
     }
 
-    drawGarden(ctx, { trees, active, atlas, groundTile, zoom })
-  }, [trees, active, width, height, atlas, groundTile, zoom])
+    drawGarden(ctx, { trees, active, atlas, groundTile })
+  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTile])
 
   useEffect(() => {
     const garden = gardenRef.current
@@ -80,32 +130,49 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       }
 
       event.preventDefault()
-      setZoom((value) => zoomFromWheel(value, event.deltaY, event.deltaMode))
+      const raw = Math.max(
+        minZoom,
+        zoomFromWheel(wheelZoomRef.current, event.deltaY, event.deltaMode),
+      )
+      wheelZoomRef.current = raw
+      setZoom(snapZoom(raw))
     }
 
     garden.addEventListener('wheel', handleWheel, { passive: false })
     return () => garden.removeEventListener('wheel', handleWheel)
-  }, [])
+  }, [minZoom, snapZoom])
 
-  const adjustZoom = (delta: number) => {
-    setZoom((value) => stepZoom(value, delta))
+  const adjustZoom = (direction: 1 | -1) => {
+    const next = Math.max(minZoom, stepPixelPerfectZoom(zoom, basePixelScale, direction))
+    wheelZoomRef.current = next
+    setZoom(next)
+  }
+
+  const changeZoom = (value: number) => {
+    wheelZoomRef.current = value
+    setZoom(snapZoom(value))
+  }
+
+  const resetZoom = () => {
+    wheelZoomRef.current = DEFAULT_ZOOM
+    setZoom(DEFAULT_ZOOM)
   }
 
   return (
     <div
       ref={gardenRef}
       className="relative z-0 w-full"
-      style={{ aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}` }}
+      style={{ aspectRatio: `${SCENE_WIDTH} / ${SCENE_HEIGHT}` }}
       title="Usá la rueda del mouse para hacer zoom"
     >
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
+        width={canvasWidth}
+        height={canvasHeight}
         className="pointer-events-none absolute left-1/2 top-1/2 block max-w-none -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: `${CANVAS_OVERSCAN * 100}%`,
-          height: `${CANVAS_OVERSCAN * 100}%`,
+          width: `${canvasWidth / dpr}px`,
+          height: `${canvasHeight / dpr}px`,
         }}
         role="img"
         aria-label={label}
@@ -128,7 +195,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           type="button"
           className="zoom-button"
           aria-label="Alejar la pradera"
-          onClick={() => adjustZoom(-ZOOM_BUTTON_STEP)}
+          disabled={zoom <= minZoom}
+          onClick={() => adjustZoom(-1)}
         >
           −
         </button>
@@ -137,11 +205,11 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           id="garden-zoom"
           className="zoom-slider"
           type="range"
-          min={MIN_ZOOM}
+          min={minZoom}
           max={MAX_ZOOM}
           step={ZOOM_SLIDER_STEP}
           value={zoom}
-          onChange={(event) => setZoom(clampZoom(Number(event.target.value)))}
+          onChange={(event) => changeZoom(Number(event.target.value))}
           aria-label="Zoom de la pradera"
           title="Arrastrá o usá la rueda del mouse"
         />
@@ -154,7 +222,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           type="button"
           className="zoom-button"
           aria-label="Acercar la pradera"
-          onClick={() => adjustZoom(ZOOM_BUTTON_STEP)}
+          disabled={zoom >= MAX_ZOOM}
+          onClick={() => adjustZoom(1)}
         >
           +
         </button>
@@ -164,7 +233,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           className="zoom-button"
           aria-label="Restablecer el zoom a 100%"
           title="Volver a 100%"
-          onClick={() => setZoom(DEFAULT_ZOOM)}
+          onClick={resetZoom}
         >
           1×
         </button>

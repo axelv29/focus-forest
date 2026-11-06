@@ -1,15 +1,15 @@
 /**
  * Geometría de la pradera.
  *
- * La celda lógica mide 64×32 (proporción 2:1). La grilla de 8×8 ocupa
- * 512×256 px lógicos; se suma un margen superior para que el árbol más
- * alto (128 px) no se corte, y todo se dibuja a escala 2×.
+ * La celda lógica mide 60×30 (proporción 2:1). La grilla de 8×8 ocupa
+ * 480×240 px lógicos; se suma un margen superior para que el árbol más
+ * alto (128 px) no se corte. El render usa una escala entera según el
+ * tamaño disponible.
  */
-export const TILE_WIDTH = 64
-export const TILE_HEIGHT = 32
+export const TILE_WIDTH = 60
+export const TILE_HEIGHT = 30
 export const GRID_COLS = 8
 export const GRID_ROWS = 8
-export const RENDER_SCALE = 2
 
 export const GRID_PIXEL_WIDTH = (GRID_COLS + GRID_ROWS) * (TILE_WIDTH / 2)
 export const GRID_PIXEL_HEIGHT = (GRID_COLS + GRID_ROWS) * (TILE_HEIGHT / 2)
@@ -28,18 +28,6 @@ export const ISLAND_DEPTH = 32
 
 export const SCENE_WIDTH = GRID_PIXEL_WIDTH
 export const SCENE_HEIGHT = TOP_PADDING + GRID_PIXEL_HEIGHT + ISLAND_DEPTH
-
-export const CANVAS_WIDTH = SCENE_WIDTH * RENDER_SCALE
-export const CANVAS_HEIGHT = SCENE_HEIGHT * RENDER_SCALE
-
-/**
- * El canvas se dibuja más grande que la pradera nominal para que, al hacer
- * zoom, la isla pueda salir del recuadro de 1024×832 en lugar de cortarse.
- * 2 alcanza para cubrir el zoom máximo (2×) y deja el borde fuera de pantalla.
- */
-export const CANVAS_OVERSCAN = 2
-export const CANVAS_RENDER_WIDTH = CANVAS_WIDTH * CANVAS_OVERSCAN
-export const CANVAS_RENDER_HEIGHT = CANVAS_HEIGHT * CANVAS_OVERSCAN
 
 /** Centro de la celda (0, 0) dentro de la escena lógica. */
 export const ORIGIN_X = GRID_PIXEL_WIDTH / 2

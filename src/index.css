@@ -276,6 +276,15 @@
     box-shadow: none;
   }
 
+  .zoom-button:disabled,
+  .zoom-button:disabled:hover,
+  .zoom-button:disabled:active {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--shadow-soft);
+  }
+
   .zoom-slider {
     width: var(--zoom-slider-width);
     accent-color: var(--color-primary);

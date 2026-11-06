@@ -93,7 +93,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - **Colocación:** aleatoria entre celdas libres con espaciamiento mínimo. Los marchitos ocupan celda. Si la grilla no tiene candidatas libres espaciadas, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio con un aviso.
 - **Persistencia:** clave `focus-forest`, versión 1, migración preparada. Datos corruptos: copia de respaldo y reinicio. Versión más nueva: aviso, sin borrar.
 - **Estadísticas:** solo enfoques completados. "Hoy" usa `endedAt` en día local. Los abandonos y los descansos no suman.
-- **Canvas:** nominal 1024×832 CSS (escena lógica 512×416: grilla 512×256 + 128 de margen superior + 32 de tierra), escala base 2×, sin suavizado, redibujo al cambiar etapa, árboles o zoom. Se dibuja con un margen de 2× (2048×1664) para que el zoom máximo no corte la isla en los bordes.
+- **Canvas:** escena lógica 480×400 (grilla 480×240 + 128 de margen superior + 32 de tierra), con escala base entera (1×, 2×…) y canvas interno a píxeles físicos; 2× da 960×800 CSS. El zoom usa solo escalas enteras de origen, así que todos los niveles son pixel-perfect estrictos: en desktop 50, 100, 150 y 200 %. No hay niveles intermedios fraccionarios. Sin suavizado, redibujo al cambiar etapa, árboles o tamaño/zoom. No hay margen de overscan: el canvas puede desbordar el contenedor y el zoom no baja de 1:1 cuando la escala base ya entra.
 - **Zoom:** rango 0.5×–2×, centrado en la escena; se controla con slider, botones o rueda del mouse; no se guarda y no modifica el estado de la sesión.
 - **Sin dependencias extra:** nada de router, librería de gráficos, motor de juego, Supabase ni PWA en la v0.1.
 

@@ -72,13 +72,13 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Isometría
 
-- Celda 64×32; grilla 8×8; escena lógica 512×416 (256 de grilla + 128 de margen superior + 32 de tierra); escala 2× → pradera nominal 1024×832. El canvas se dibuja al doble de tamaño para que el zoom pueda desbordar el recuadro sin cortar la isla.
-- `x = origenX + (col - row) * 32`
-- `y = origenY + (col + row) * 16`
+- Celda 60×30; grilla 8×8; escena lógica 480×400 (240 de grilla + 128 de margen superior + 32 de tierra). La escala base se elige entera según el contenedor (0.5× solo si es más chico que la escena; luego 1×, 2×…). El zoom usa solo escalas pixel-perfect: múltiplos enteros de la escala de origen (0.5× solo como ajuste mínimo), sin medios pasos ni niveles intermedios fraccionarios. El zoom no baja de 1:1 salvo cuando la base ya es menor.
+- `x = origenX + (col - row) * 30`
+- `y = origenY + (col + row) * 15`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
 - Sprites anclados en la base del tronco; los atlas de 122×92 contienen 4 frames recortados por estado, con la sombra pixelada incluida en cada frame, y se dibujan a tamaño nativo.
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
-- Redibujar al cambiar etapa, árboles o zoom; no en cada tick del timer.
+- Redibujar al cambiar etapa, árboles o tamaño/zoom; no en cada tick del timer.
 
 ### Interfaz
 
@@ -89,8 +89,8 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Bordes duros, sombras sin desenfoque, sin degradados, sin esquinas muy redondeadas.
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: timer, pausa y abandonar; ocultar paneles y pestañas.
-- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia.
-- La isla y el césped del canvas siguen siendo placeholder; la paleta de esa parte vive en `drawGarden.ts`. Los árboles ya usan el atlas y no forman parte del tema visual.
+- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. Si la escala base ya entra a 1:1, el mínimo es 1×.
+- El suelo usa `tileset8x8.png` y los árboles usan sus atlas; los placeholders de `drawGarden.ts` quedan solo como fallback.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 
 ### Código

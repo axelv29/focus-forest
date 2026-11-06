@@ -4,7 +4,7 @@ App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada sesión comp
 
 ## Estado
 
-v0.1 funcional: timer de enfoque y descanso, crecimiento en 4 etapas, pradera 8×8, estadísticas, guardado local y zoom de la pradera. Los árboles ya usan los sprites del atlas; la isla y el césped siguen placeholder. El deploy a Vercel queda pendiente de la cuenta. El alcance y los criterios están en [`FICHA_v0.1.md`](./FICHA_v0.1.md); las decisiones y la guía de estilo, en [`docs/PLAN.md`](./docs/PLAN.md).
+v0.1 funcional: timer de enfoque y descanso, crecimiento en 4 etapas, pradera 8×8, estadísticas, guardado local y zoom de la pradera. Los árboles y el suelo ya usan los sprites definitivos. El deploy a Vercel queda pendiente de la cuenta. El alcance y los criterios están en [`FICHA_v0.1.md`](./FICHA_v0.1.md); las decisiones y la guía de estilo, en [`docs/PLAN.md`](./docs/PLAN.md).
 
 Repositorio: [github.com/axelv29/focus-forest](https://github.com/axelv29/focus-forest).
 

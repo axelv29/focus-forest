@@ -7,7 +7,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 - **Producto:** Focus Forest, una app web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada sesión de enfoque completada planta un árbol en una pradera isométrica.
 - **Stack ✅:** Vite + React + TypeScript + Tailwind CSS v4, dibujo con Canvas 2D, Zustand para el estado y Vitest para la lógica. Publicación en Vercel. Next.js se descarta (ver sección 3).
 - **Alcance de la v0.1 ✅:** enfoque de 25 minutos y descanso de 5, un árbol por sesión, 4 etapas de crecimiento, pradera de 8×8, estadísticas de hoy y totales, guardado local y contador de pomodoros sin meta.
-- **Tamaño de celda ✅:** 64×32 px, con árbol adulto de 44 ancho × 89 alto (atlas de 122×92 con frames recortados). Se descartan las celdas de 78×51 de las hojas de referencia.
+- **Tamaño de celda ✅:** 60×30 px, con árbol adulto de 44 ancho × 89 alto (atlas de 122×92 con frames recortados). Se descartan las celdas de 78×51 de las hojas de referencia.
 - **Arte ✅:** propio o encargado. Una sola especie (pino) con 4 etapas vivas y 4 versiones marchitas; los assets están en `public/sprites/`.
 - **Nombre ✅:** Focus Forest. Revisar antes de publicar por la proximidad con la app Forest.
 - **Plataforma ✅:** navegador de escritorio primero. Mobile queda para una versión posterior.
@@ -23,7 +23,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 | Al completar | El árbol adulto queda en la pradera y la sesión se registra |
 | Al abandonar | El árbol queda marchito con la variante de su etapa y no acredita minutos |
 | Recarga | Reanuda; si el enfoque ya venció, completa; si el descanso venció, cierra |
-| Celdas | 64×32, grilla 8×8, escala 2× (escena 512×416 → 1024×832 en pantalla) |
+| Celdas | 60×30, grilla 8×8, escena lógica 480×400; escala base entera y zoom solo en escalas enteras |
 | Árbol adulto | 44 ancho × 89 alto; frames recortados por estado y dibujo a tamaño nativo |
 | Contador | "Pomodoros hoy: N", sin meta diaria |
 | Estadísticas | Hoy y totales; sin gráficos, rachas ni calendario |
@@ -75,7 +75,7 @@ Las opciones, comparadas:
 - **Un solo canvas y redibujo bajo demanda:** se vuelve a dibujar cuando cambia una etapa o se planta un árbol, no 60 veces por segundo. El crecimiento va por umbrales de minutos, así que no necesita animación continua.
 - **Atlas de sprites:** los assets viven en `public/sprites/`: cada estado usa su propio atlas de pino y sus frames recortados. Se cargan una sola vez; si falta uno, se usan placeholders dibujados por código.
 - **Etapas con el mismo anclaje:** las 4 versiones vivas y sus 4 versiones marchitas se dibujan a tamaño nativo desde sus frames recortados y se anclan en la base del tronco. La sombra pixelada va incluida en cada frame y puede sobresalir por debajo del ancla. Los atlas miden `122×92`.
-- **Lienzo con margen:** la escena lógica mide 512×416: los 256 de la grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. A 2× son 1024×832 px nominales; el canvas de dibujo tiene 2× de margen para que el zoom pueda desbordar el recuadro sin cortar la isla.
+- **Lienzo pixel-perfect:** la escena lógica mide 480×400: 240 de grilla, 128 de margen superior para que el árbol de la fila de atrás no se corte y 32 de tierra visible. La escala base se elige entera (1×, 2×, 3×…; 0.5× solo si el contenedor es más chico que la escena) y se muestra a tamaño físico. El zoom se limita a múltiplos enteros de la escala de origen (0.5× solo como ajuste mínimo): no hay medios pasos ni niveles intermedios, así que no se mezclan píxeles de 1/2 px. El zoom-out nunca baja de 1:1 si la escala base ya entra.
 - **Imágenes optimizadas:** PNG comprimidos y solo los sprites que se usan.
 - **Dos fuentes como máximo,** servidas localmente, con alternativa del sistema mientras cargan.
 - **Carga a demanda:** las estadísticas con gráficos y Supabase entran recién cuando se usan (v0.2/v0.3).
@@ -93,7 +93,7 @@ Las opciones, comparadas:
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
 - **Interfaz:** vista Bosque y vista Estadísticas. Durante la sesión se esconden los paneles y quedan el timer, pausa y abandonar.
-- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. No cambia el timer, los árboles ni las estadísticas.
+- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. En desktop los niveles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
 
 ### Después
 
@@ -131,10 +131,10 @@ focus-forest/
     styles/
       theme.css            paleta, tipografías y tokens del tema
     config/
-      grid.ts              8×8, celda 64×32, escala 2×
+      grid.ts              8×8, celda 60×30, escena 480×400
       timer.ts             25 y 5 minutos
       growth.ts            umbrales 0/5/15/25
-      zoom.ts              0.5×–2× y pasos del control
+      zoom.ts              0.5×–2×, escalas enteras y formato
     state/
       types.ts             forma de los datos
       store.ts             estado de la app
@@ -146,11 +146,11 @@ focus-forest/
       stats.ts             hoy y totales
       placement.ts         siguiente celda libre aleatoria y espaciada
       day.ts               día local
-      zoom.ts              límites, pasos y formato del zoom
+      zoom.ts              límites, escala base entera, niveles enteros y formato
     render/
       iso.ts               de celda a pantalla y orden de dibujo
       sprites.ts           carga de los atlas de pino y dibujo de frames
-      drawGarden.ts        dibuja la pradera, los árboles y el zoom
+      drawGarden.ts        dibuja la pradera y los árboles a la escala resuelta
     hooks/
       useCountdown.ts      tick de 0.5 s para la interfaz
     components/
@@ -238,13 +238,13 @@ Modo oscuro: fuera de la v0.1. Fondo #203f3b con texto #e9edd0, para más adelan
 
 - Bordes de 2 a 3 px, esquinas rectas o con recorte escalonado, sombras duras sin desenfoque y sin degradados.
 - Íconos en pixel art de 16×16 o 24×24, escalados solo a múltiplos enteros.
-- La pradera se dibuja a escala entera (2×) y con `image-rendering: pixelated`.
+- La pradera usa escala base entera (1×, 2×…) y `image-rendering: pixelated`; el zoom también se mantiene en escalas enteras. El canvas interno se ajusta a píxeles físicos.
 - Animaciones de 200 a 400 ms, sin rebotes ni parpadeos, respetando `prefers-reduced-motion`.
 - Sonido apagado por defecto; en la v0.1 no hay sonido.
 
 ### Composición de la pantalla
 
-- **Escritorio:** diorama de 1024×832 centrado, con la tarjeta de sesión a la izquierda y el timer a la derecha. La pradera es el centro; los paneles no compiten con ella.
+- **Escritorio:** diorama de 960×800 centrado (2× de la escena 480×400), con la tarjeta de sesión a la izquierda y el timer a la derecha. La pradera es el centro; los paneles no compiten con ella.
 - **Durante una sesión:** se esconden las pestañas y los paneles; quedan el timer, pausa y abandonar.
 - **Mobile:** fuera del alcance de la v0.1. La app no debe romperse a 360 px, pero el layout completo se diseña después. Una pradera isométrica 2:1 es una banda ancha; no puede ocupar el 80 % de una pantalla vertical sin recortar o hacer zoom.
 - **Lenguaje amable:** nada de mensajes de castigo; al abandonar, un aviso sereno.
