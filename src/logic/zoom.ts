@@ -1,7 +1,4 @@
-import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM } from '@/config/zoom'
-
-/** Sensibilidad de la rueda; un delta de 100 px acerca o aleja ~14%. */
-const WHEEL_SENSITIVITY = 0.0015
+import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, WHEEL_STEP_DELTA } from '@/config/zoom'
 
 function clampValue(value: number): number {
   if (!Number.isFinite(value)) {
@@ -19,18 +16,50 @@ export function clampZoom(value: number): number {
   return Math.round(clampValue(value) * 100) / 100
 }
 
-/**
- * Convierte el desplazamiento de la rueda en un zoom continuo.
- * No redondea a dos decimales para que los deltas chicos de un trackpad
- * se acumulen en lugar de perderse en cada evento.
- */
-export function zoomFromWheel(value: number, deltaY: number, deltaMode = 0): number {
+/** Lleva un delta de rueda (píxeles, líneas o páginas) a una unidad común. */
+export function normalizeWheelDelta(deltaY: number, deltaMode = 0): number {
   if (!Number.isFinite(deltaY) || deltaY === 0) {
-    return clampValue(value)
+    return 0
   }
 
   const unit = deltaMode === 1 ? 16 : deltaMode === 2 ? 100 : 1
-  return clampValue(value * Math.exp(-deltaY * unit * WHEEL_SENSITIVITY))
+  return deltaY * unit
+}
+
+export interface WheelZoomStep {
+  zoom: number
+  accumulator: number
+}
+
+/**
+ * Acumula la rueda y avanza un único nivel pixel-perfect cuando se alcanza el
+ * umbral. Así un giro normal cambia 50→100→150→200 sin saltos intermedios y
+ * los deltas chicos de un trackpad no se pierden.
+ */
+export function wheelZoomStep(
+  zoom: number,
+  basePixelScale: number,
+  accumulator: number,
+  deltaY: number,
+  deltaMode = 0,
+): WheelZoomStep {
+  const delta = normalizeWheelDelta(deltaY, deltaMode)
+  if (delta === 0) {
+    return { zoom, accumulator }
+  }
+
+  const previous = Number.isFinite(accumulator) ? accumulator : 0
+  const nextAccumulator = Math.sign(previous) === Math.sign(delta) ? previous + delta : delta
+
+  if (Math.abs(nextAccumulator) < WHEEL_STEP_DELTA) {
+    return { zoom, accumulator: nextAccumulator }
+  }
+
+  const direction: 1 | -1 = nextAccumulator < 0 ? 1 : -1
+  return {
+    zoom: stepPixelPerfectZoom(zoom, basePixelScale, direction),
+    accumulator: 0,
+  }
 }
 
 export function stepZoom(value: number, delta: number): number {

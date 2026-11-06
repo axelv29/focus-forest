@@ -89,7 +89,9 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Bordes duros, sombras sin desenfoque, sin degradados, sin esquinas muy redondeadas.
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: timer, pausa y abandonar; ocultar paneles y pestañas.
-- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. Si la escala base ya entra a 1:1, el mínimo es 1×.
+- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1×.
+
+- Arrastre de la pradera: con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página; no cambia el cursor. El diorama se centra verticalmente y el desplazamiento se mide simétricamente desde ese centro. El recorrido base escala con el zoom y se le suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para que al cambiar de zoom se mantenga proporcional y no salte. El botón `1×` vuelve a 100 % y recentra la pradera. El arrastre no cambia el zoom, el timer ni el store.
 - El suelo usa `tileset8x8.png` y los árboles usan sus atlas; los placeholders de `drawGarden.ts` quedan solo como fallback.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 

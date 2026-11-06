@@ -93,7 +93,9 @@ Las opciones, comparadas:
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
 - **Interfaz:** vista Bosque y vista Estadísticas. Durante la sesión se esconden los paneles y quedan el timer, pausa y abandonar.
-- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. En desktop los niveles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
+- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. En desktop los niveles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
+
+- **Arrastre de la pradera:** con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página, sin cambiar el cursor. El diorama se centra verticalmente y los límites se miden simétricamente desde ese centro. El recorrido base escala con el zoom y suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para conservarse proporcional al zoomear. El botón `1×` restablece el zoom y recentra. El arrastre no modifica el timer, los árboles ni el store.
 
 ### Después
 

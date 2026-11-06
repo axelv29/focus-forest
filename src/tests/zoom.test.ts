@@ -5,11 +5,12 @@ import {
   fitPixelScale,
   formatZoom,
   minPixelPerfectZoom,
+  normalizeWheelDelta,
   pixelPerfectZoom,
   snapPixelScale,
   stepPixelPerfectZoom,
   stepZoom,
-  zoomFromWheel,
+  wheelZoomStep,
 } from '@/logic/zoom'
 
 describe('clampZoom', () => {
@@ -36,28 +37,31 @@ describe('stepZoom', () => {
   })
 })
 
-describe('zoomFromWheel', () => {
-  it('acerca al girar hacia arriba y aleja al girar hacia abajo', () => {
-    expect(zoomFromWheel(1, -100)).toBeGreaterThan(1)
-    expect(zoomFromWheel(1, 100)).toBeLessThan(1)
+describe('rueda de zoom', () => {
+  it('normaliza los deltas por píxel, línea y página', () => {
+    expect(normalizeWheelDelta(-1)).toBe(-1)
+    expect(normalizeWheelDelta(-1, 1)).toBe(-16)
+    expect(normalizeWheelDelta(-1, 2)).toBe(-100)
+    expect(normalizeWheelDelta(1)).toBe(1)
+    expect(normalizeWheelDelta(Number.NaN)).toBe(0)
   })
 
-  it('acumula los deltas chicos sin redondear cada evento', () => {
-    const first = zoomFromWheel(1, 4)
-    expect(first).toBeLessThan(1)
-    expect(zoomFromWheel(first, 4)).toBeLessThan(first)
+  it('un giro normal avanza un nivel pixel-perfect', () => {
+    expect(wheelZoomStep(1, 2, 0, -100)).toEqual({ zoom: 1.5, accumulator: 0 })
+    expect(wheelZoomStep(1.5, 2, 0, -100)).toEqual({ zoom: 2, accumulator: 0 })
+    expect(wheelZoomStep(1, 2, 0, 100)).toEqual({ zoom: 0.5, accumulator: 0 })
   })
 
-  it('respeta los límites y los deltas inválidos', () => {
-    expect(zoomFromWheel(MIN_ZOOM, 1000)).toBe(MIN_ZOOM)
-    expect(zoomFromWheel(MAX_ZOOM, -1000)).toBe(MAX_ZOOM)
-    expect(zoomFromWheel(1, 0)).toBe(1)
-    expect(zoomFromWheel(1, Number.NaN)).toBe(1)
+  it('acumula deltas chicos hasta alcanzar el umbral', () => {
+    const first = wheelZoomStep(1, 2, 0, -20)
+    expect(first).toEqual({ zoom: 1, accumulator: -20 })
+    expect(wheelZoomStep(1, 2, first.accumulator, -20)).toEqual({ zoom: 1.5, accumulator: 0 })
   })
 
-  it('normaliza los deltas por línea y por página', () => {
-    expect(zoomFromWheel(1, -1, 1)).toBeGreaterThan(zoomFromWheel(1, -1, 0))
-    expect(zoomFromWheel(1, -1, 2)).toBeGreaterThan(zoomFromWheel(1, -1, 1))
+  it('reinicia al cambiar de dirección y respeta los extremos', () => {
+    expect(wheelZoomStep(1, 2, -20, 20)).toEqual({ zoom: 1, accumulator: 20 })
+    expect(wheelZoomStep(2, 2, 0, -100)).toEqual({ zoom: 2, accumulator: 0 })
+    expect(wheelZoomStep(0.5, 2, 0, 100)).toEqual({ zoom: 0.5, accumulator: 0 })
   })
 })
 
