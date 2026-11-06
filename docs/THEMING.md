@@ -121,5 +121,5 @@ La isla y el césped del canvas siguen siendo arte placeholder. Los árboles ya 
 - [ ] Los textos usan `.type-*` o `.eyebrow`.
 - [ ] Los botones usan `.btn` y una variante.
 - [ ] `npm run lint`, `npm test` y `npm run build` pasan.
-- [ ] Se revisó el layout a 1440×900 y a 360 px.
+- [x] Se revisó el layout a 1366×768, 1440×900 y a 360 px.
 - [ ] El contraste de textos sobre fondos sigue siendo legible.

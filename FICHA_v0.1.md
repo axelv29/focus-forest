@@ -108,7 +108,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - [x] "Hoy" y los totales cuentan solo enfoques completados, con el día local correcto.
 - [x] El jardín se llena aleatoriamente hasta ocupar las 64 celdas; con 64 adultos avisa que está lleno.
 - [x] Recargar conserva jardín, sesión y estadísticas; datos corruptos no rompen la app.
-- [x] En 1440×900 se ve el layout de escritorio sin scroll horizontal; a 360 px no se rompe.
+- [x] En 1366×768 y 1440×900 se ve el layout de escritorio con el timer sobre la pradera sin scroll; a 360 px no se rompe.
 - [x] El zoom de la pradera funciona con los botones y la rueda sin afectar el timer ni el estado, y la isla puede desbordar el recuadro sin cortarse.
 - [x] `npm run lint`, `npm test` y `npm run build` pasan.
 - [x] Sin errores de consola.
