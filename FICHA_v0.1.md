@@ -112,7 +112,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - [x] El zoom de la pradera funciona con los botones y la rueda sin afectar el timer ni el estado, y la isla puede desbordar el recuadro sin cortarse.
 - [x] `npm run lint`, `npm test` y `npm run build` pasan.
 - [x] Sin errores de consola.
-- [ ] Publicado en Vercel.
+- [x] Publicado en Vercel.
 
 ## 7. Casos borde
 
