@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -14,11 +13,10 @@ import {
   SCENE_WIDTH,
   TOP_PADDING,
 } from '@/config/grid'
-import { DEFAULT_ZOOM, MAX_ZOOM, ZOOM_SLIDER_STEP } from '@/config/zoom'
+import { DEFAULT_ZOOM, MAX_ZOOM } from '@/config/zoom'
 import { clampPan, panLimit, type PanOffset } from '@/logic/pan'
 import {
   fitPixelScale,
-  formatZoom,
   minPixelPerfectZoom,
   pixelPerfectZoom,
   snapPixelScale,
@@ -28,6 +26,7 @@ import {
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
 import { loadAtlas, loadGroundTile, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
 import type { Tree } from '@/state/types'
+import { MinusIcon, PlusIcon, ResetIcon } from './icons'
 
 interface GardenCanvasProps {
   trees: readonly Tree[]
@@ -102,11 +101,6 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   useLayoutEffect(() => {
     panRef.current = pan
   }, [pan])
-
-  const snapZoom = useCallback(
-    (value: number) => Math.max(minZoom, pixelPerfectZoom(value, basePixelScale)),
-    [basePixelScale, minZoom],
-  )
 
   useEffect(() => {
     if (!SPRITES_ENABLED) {
@@ -247,13 +241,6 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     setZoom(next)
   }
 
-  const changeZoom = (value: number) => {
-    const next = snapZoom(value)
-    wheelZoomRef.current = next
-    wheelAccumulatorRef.current = 0
-    setZoom(next)
-  }
-
   const resetView = () => {
     wheelZoomRef.current = DEFAULT_ZOOM
     wheelAccumulatorRef.current = 0
@@ -309,7 +296,6 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       ref={gardenRef}
       className="relative z-0 w-full select-none"
       style={{ aspectRatio: `${SCENE_WIDTH} / ${SCENE_HEIGHT}` }}
-      title="Arrastrá para mover el mapa; usá la rueda del mouse para hacer zoom"
       onPointerMove={moveDrag}
       onPointerUp={finishDrag}
       onPointerCancel={finishDrag}
@@ -335,44 +321,17 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
 
       {trees.length === 0 && !active && (
         <div className="pointer-events-none absolute inset-x-0 top-[56%] z-10 flex justify-center px-6">
-          <p className="card card--compact type-body max-w-xs text-center font-semibold">
+          <p className="card card--compact type-body max-w-xs text-center font-medium">
             Empezá un pomodoro para plantar tu primer árbol.
           </p>
         </div>
       )}
 
       <div
-        className="zoom-control absolute left-3 top-3 z-20 sm:left-12"
+        className="zoom-control"
         role="group"
         aria-label="Zoom de la pradera; también funciona con la rueda del mouse"
       >
-        <button
-          type="button"
-          className="zoom-button"
-          aria-label="Alejar la pradera"
-          disabled={zoom <= minZoom}
-          onClick={() => adjustZoom(-1)}
-        >
-          −
-        </button>
-
-        <input
-          id="garden-zoom"
-          className="zoom-slider"
-          type="range"
-          min={minZoom}
-          max={MAX_ZOOM}
-          step={ZOOM_SLIDER_STEP}
-          value={zoom}
-          onChange={(event) => changeZoom(Number(event.target.value))}
-          aria-label="Zoom de la pradera"
-          title="Arrastrá o usá la rueda del mouse"
-        />
-
-        <output className="zoom-value" htmlFor="garden-zoom" aria-live="polite">
-          {formatZoom(zoom)}
-        </output>
-
         <button
           type="button"
           className="zoom-button"
@@ -380,17 +339,27 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
           disabled={zoom >= MAX_ZOOM}
           onClick={() => adjustZoom(1)}
         >
-          +
+          <PlusIcon />
         </button>
 
         <button
           type="button"
           className="zoom-button"
-          aria-label="Restablecer el zoom a 100% y centrar la pradera"
-          title="Volver a 100% y centrar"
+          aria-label="Alejar la pradera"
+          disabled={zoom <= minZoom}
+          onClick={() => adjustZoom(-1)}
+        >
+          <MinusIcon />
+        </button>
+
+        <button
+          type="button"
+          className="zoom-button"
+          aria-label="Restablecer el zoom y centrar la pradera"
+          title="Volver al zoom inicial y centrar"
           onClick={resetView}
         >
-          1×
+          <ResetIcon />
         </button>
       </div>
     </div>

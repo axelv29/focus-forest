@@ -75,7 +75,39 @@ Ver [`CONTEXTO.md`](./CONTEXTO.md). Antes de cada commit: `npm run lint`, `npm t
 
 ## Deploy
 
-Listo para Vercel: framework Vite, build `npm run build`, salida `dist` (`vercel.json`). Importá el repositorio en Vercel o usá la CLI. El workflow de CI está en `.github/workflows/ci.yml`.
+Listo para Vercel: framework Vite, build `npm run build`, salida `dist` (`vercel.json`). El workflow de CI está en `.github/workflows/ci.yml`.
+
+### Desde la web
+
+1. Subí los cambios a GitHub:
+
+   ```bash
+   git add .
+   git commit -m "feat: rediseño del HUD y robustez de persistencia"
+   git push origin main
+   ```
+
+2. Entrá a [vercel.com/new](https://vercel.com/new) e importá `axelv29/focus-forest`.
+3. Dejá el **Root Directory** vacío: el proyecto está en la raíz del repositorio.
+4. Verificá el preset **Vite**. Build Command: `npm run build`. Output Directory: `dist`.
+5. No hacen falta variables de entorno.
+6. Presioná **Deploy**. Cada push a `main` vuelve a desplegar.
+
+### Con la CLI
+
+```bash
+npx vercel login
+npx vercel
+npx vercel --prod
+```
+
+`npx vercel` crea el proyecto y hace un deploy de preview; `--prod` publica en producción. La carpeta `.vercel` ya está ignorada por git.
+
+### Verificación
+
+- Abrí la URL de producción y comprobá que carga el favicon, el timer y la pradera.
+- Revisá la consola del navegador: no debe haber errores.
+- En Vercel, **Deployments** muestra el historial; **Settings → Domains** permite agregar un dominio propio.
 
 ## Licencias
 

@@ -46,6 +46,17 @@ describe('nextFreeCell', () => {
     expect(cell).not.toEqual({ col: 3, row: 3 })
   })
 
+  it('permite ocupar celdas contiguas', () => {
+    expect(nextFreeCell([{ col: 3, row: 3 }], 8, 8, () => 0)).toEqual({ col: 4, row: 3 })
+  })
+
+  it('deja la última celda libre como candidata', () => {
+    const order = cellOrder()
+    const occupied = order.slice(0, order.length - 1)
+
+    expect(nextFreeCell(occupied, 8, 8, () => 0)).toEqual(order[order.length - 1])
+  })
+
   it('devuelve null cuando la grilla está llena', () => {
     expect(nextFreeCell(cellOrder(), 8, 8, () => 0)).toBeNull()
   })

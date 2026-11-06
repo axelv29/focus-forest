@@ -62,10 +62,6 @@ export function wheelZoomStep(
   }
 }
 
-export function stepZoom(value: number, delta: number): number {
-  return clampZoom(value + delta)
-}
-
 /**
  * Escala base en píxeles físicos por píxel lógico. Elige la mayor escala
  * entera (o 0.5x) que entra en el contenedor sin desbordarlo.
@@ -125,8 +121,4 @@ export function stepPixelPerfectZoom(
   const next = direction > 0 ? (current < 1 ? 1 : current + 1) : current <= 1 ? 0.5 : current - 1
 
   return clampZoom(next / base)
-}
-
-export function formatZoom(value: number): string {
-  return `${Math.round(clampZoom(value) * 100)}%`
 }

@@ -61,7 +61,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Una sesión de enfoque completada termina en etapa 4.
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
 - Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
-- La nueva celda se elige aleatoriamente entre libres con espaciamiento mínimo; si no quedan candidatas, se reemplaza el marchito más viejo.
+- La nueva celda se elige aleatoriamente entre las libres, sin espaciamiento mínimo: se pueden ocupar las 64 celdas de la grilla. Si no quedan libres, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio.
 
 ### Datos
 
@@ -69,6 +69,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Los descansos no se guardan como historial; solo existe el descanso activo.
 - Las estadísticas se derivan; no guardar contadores duplicados.
 - Al rehidratar, reconciliar: enfoque vencido → completar; descanso vencido → cerrar; pausado → no completar.
+- Datos dañados: copiar a `focus-forest.broken` y reiniciar. Versión más nueva: avisar y bloquear escrituras sin tocar el original. localStorage bloqueado o lleno: avisar y seguir en memoria.
 
 ### Isometría
 
@@ -85,13 +86,15 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Español para la UI; inglés para identificadores, archivos y tipos.
 - Tema centralizado: `src/styles/theme.css` es la fuente de verdad; `src/index.css` lo registra en Tailwind y define las clases de componentes. No usar hex, tamaños de fuente ni sombras sueltas en los `.tsx`.
 - Tarjetas con `.card` (y `--compact`/`--roomy`); botones con `.btn` y variantes; textos con `.type-*` o `.eyebrow`. Ver `docs/THEMING.md`.
-- Dos fuentes: Nunito (textos y timer) y Press Start 2P (título y etiquetas cortas).
-- Bordes duros, sombras sin desenfoque, sin degradados, sin esquinas muy redondeadas.
+- En desktop las tarjetas se anclan a 16 px de los bordes de la ventana con ancho fluido: el timer es la tarjeta principal y siempre es más ancha que la de sesión.
+- Dos fuentes: Nunito (textos, títulos y timer) y Quicksand 600 (botones y controles). Se sirven desde `@fontsource`.
+- Forma suave: esquinas de 12 a 16 px, bordes finos translúcidos, sombras muy tenues y sin degradados, salvo el anillo del temporizador. Nada de estética pixel en el DOM.
+- La tarjeta de sesión solo aparece mientras corre un enfoque (también en pausa): nombre derivado, día y hora de inicio, estado del árbol y bosque. La línea de etapas resume el crecimiento.
 - Respetar `prefers-reduced-motion`.
-- Durante una sesión: timer, pausa y abandonar; ocultar paneles y pestañas.
-- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con el slider, los botones o la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1×.
+- Durante una sesión: el selector de vistas se deshabilita y no se puede cambiar de ventana; timer, pausa y abandonar siguen a mano.
+- Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con tres botones flotantes (acercar, alejar y restablecer) o con la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1×. No hay slider ni porcentaje visible.
 
-- Arrastre de la pradera: con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página; no cambia el cursor. El diorama se centra verticalmente y el desplazamiento se mide simétricamente desde ese centro. El recorrido base escala con el zoom y se le suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para que al cambiar de zoom se mantenga proporcional y no salte. El botón `1×` vuelve a 100 % y recentra la pradera. El arrastre no cambia el zoom, el timer ni el store.
+- Arrastre de la pradera: con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página; no cambia el cursor. El diorama se centra verticalmente y el desplazamiento se mide simétricamente desde ese centro. El recorrido base escala con el zoom y se le suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para que al cambiar de zoom se mantenga proporcional y no salte. El botón de retícula vuelve a la vista inicial y recentra la pradera. El arrastre no cambia el zoom, el timer ni el store.
 - El suelo usa `tileset8x8.png` y los árboles usan sus atlas; los placeholders de `drawGarden.ts` quedan solo como fallback.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 

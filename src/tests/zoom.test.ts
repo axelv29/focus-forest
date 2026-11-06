@@ -3,13 +3,11 @@ import { MAX_ZOOM, MIN_ZOOM } from '@/config/zoom'
 import {
   clampZoom,
   fitPixelScale,
-  formatZoom,
   minPixelPerfectZoom,
   normalizeWheelDelta,
   pixelPerfectZoom,
   snapPixelScale,
   stepPixelPerfectZoom,
-  stepZoom,
   wheelZoomStep,
 } from '@/logic/zoom'
 
@@ -25,15 +23,6 @@ describe('clampZoom', () => {
   it('vuelve al centro con valores inválidos', () => {
     expect(clampZoom(Number.NaN)).toBe(1)
     expect(clampZoom(Number.POSITIVE_INFINITY)).toBe(1)
-  })
-})
-
-describe('stepZoom', () => {
-  it('suma y resta sin salir del rango', () => {
-    expect(stepZoom(1, 0.1)).toBe(1.1)
-    expect(stepZoom(1, -0.1)).toBe(0.9)
-    expect(stepZoom(0.5, -0.1)).toBe(0.5)
-    expect(stepZoom(2, 0.1)).toBe(2)
   })
 })
 
@@ -62,15 +51,6 @@ describe('rueda de zoom', () => {
     expect(wheelZoomStep(1, 2, -20, 20)).toEqual({ zoom: 1, accumulator: 20 })
     expect(wheelZoomStep(2, 2, 0, -100)).toEqual({ zoom: 2, accumulator: 0 })
     expect(wheelZoomStep(0.5, 2, 0, 100)).toEqual({ zoom: 0.5, accumulator: 0 })
-  })
-})
-
-describe('formatZoom', () => {
-  it('muestra el porcentaje redondeado', () => {
-    expect(formatZoom(0.5)).toBe('50%')
-    expect(formatZoom(1)).toBe('100%')
-    expect(formatZoom(1.234)).toBe('123%')
-    expect(formatZoom(2)).toBe('200%')
   })
 })
 

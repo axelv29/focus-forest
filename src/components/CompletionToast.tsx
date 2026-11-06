@@ -30,7 +30,7 @@ export function CompletionToast() {
       role="status"
       aria-live="polite"
     >
-      <div className={`card card--compact type-body font-semibold ${TONE[notice.kind]}`}>
+      <div className={`card card--compact toast type-body font-medium ${TONE[notice.kind]}`}>
         {notice.text}
       </div>
     </div>

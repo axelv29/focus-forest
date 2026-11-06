@@ -5,15 +5,16 @@
  * Puente entre el tema y Tailwind.
  *
  * Los valores reales viven en styles/theme.css. Este bloque solo les da
- * nombres para las utilidades (bg-background, text-ink, font-pixel, etc.).
+ * nombres para las utilidades (bg-background, text-ink, font-button, etc.).
  * Si agregás un color nuevo, agregalo en theme.css y registralo acá.
  */
 @theme {
   --font-sans: var(--theme-font-sans);
-  --font-pixel: var(--theme-font-pixel);
+  --font-button: var(--theme-font-button);
 
   --color-ink: var(--palette-ink);
   --color-primary: var(--palette-primary);
+  --color-cta: var(--palette-cta);
   --color-active: var(--palette-active);
   --color-accent: var(--palette-accent);
   --color-muted: var(--palette-muted);
@@ -23,6 +24,8 @@
   --color-bark: var(--palette-bark);
   --color-blossom: var(--palette-blossom);
   --color-cream: var(--palette-cream);
+  --color-danger: var(--palette-danger);
+  --color-card: var(--palette-card);
 }
 
 @layer base {
@@ -70,6 +73,7 @@
     box-shadow: var(--card-shadow);
     color: var(--card-fg);
     padding: var(--card-padding);
+    animation: card-in 450ms var(--ease-soft) both;
   }
 
   .card--compact {
@@ -80,18 +84,58 @@
     padding: var(--card-padding-roomy);
   }
 
-  /* Tipografía: los tamaños y familias salen de theme.css. */
-  .app-title {
-    font-family: var(--font-pixel);
-    font-size: var(--type-app-title-size);
-    line-height: 1.6;
-    letter-spacing: var(--type-app-title-tracking);
+  .card--session {
+    background-color: var(--card-bg-session);
   }
 
+  .stat-grid .card:nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .stat-grid .card:nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .stat-grid .card:nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  /* Marca de la app. */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: 0.5625rem;
+    background-color: color-mix(in srgb, var(--palette-accent) 22%, var(--palette-card));
+    color: var(--palette-primary);
+  }
+
+  .brand-mark svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-title {
+    font-family: var(--font-sans);
+    font-size: var(--type-app-title-size);
+    font-weight: 700;
+    letter-spacing: var(--type-app-title-tracking);
+    line-height: 1;
+  }
+
+  /* Tipografía: los tamaños y familias salen de theme.css. */
   .eyebrow {
-    font-family: var(--font-pixel);
+    font-family: var(--font-sans);
     font-size: var(--type-eyebrow-size);
-    line-height: 1.6;
+    font-weight: 600;
+    line-height: 1.4;
     letter-spacing: var(--type-eyebrow-tracking);
     text-transform: uppercase;
     color: var(--color-muted);
@@ -111,7 +155,7 @@
 
   .type-timer {
     font-size: var(--type-timer-size);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     color: var(--color-ink);
@@ -119,7 +163,7 @@
 
   .type-stat {
     font-size: var(--type-stat-size);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -134,6 +178,11 @@
     line-height: 1.5;
   }
 
+  .type-micro {
+    font-size: var(--type-micro-size);
+    line-height: 1.4;
+  }
+
   .type-muted {
     color: var(--color-muted);
   }
@@ -143,40 +192,50 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.45rem;
     border: var(--button-border-width) solid var(--button-border-color);
     border-radius: var(--button-radius);
     background-color: var(--button-secondary-bg);
     color: var(--button-secondary-fg);
     padding: var(--button-padding-y) var(--button-padding-x);
-    font-family: var(--font-sans);
-    font-weight: 700;
+    font-family: var(--button-font);
+    font-size: 0.8125rem;
+    font-weight: 600;
     line-height: 1.2;
     box-shadow: var(--button-shadow);
     cursor: pointer;
     transition:
       background-color var(--motion-normal) ease,
+      border-color var(--motion-normal) ease,
+      color var(--motion-normal) ease,
       transform var(--motion-fast) ease,
       box-shadow var(--motion-fast) ease;
   }
 
+  .btn svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: 0 0 auto;
+  }
+
   .btn:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: var(--button-shadow-hover);
+    transform: translateY(-1px);
   }
 
   .btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: none;
+    transform: translateY(1px);
   }
 
   .btn--sm {
     padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
-    font-size: var(--type-body-size);
+    font-size: var(--type-caption-size);
   }
 
   .btn-primary {
+    border-color: transparent;
     background-color: var(--button-primary-bg);
     color: var(--button-primary-fg);
+    box-shadow: var(--shadow-button);
   }
 
   .btn-primary:hover {
@@ -192,29 +251,312 @@
     background-color: var(--button-secondary-bg-hover);
   }
 
-  .btn-danger {
-    background-color: var(--button-danger-bg);
+  /* Acción destructiva silenciosa: el rojo aparece al pasar el mouse. */
+  .btn-ghost-danger {
+    border-color: var(--button-border-color);
+    background-color: transparent;
+    color: var(--button-ghost-fg);
+  }
+
+  .btn-ghost-danger:hover {
+    border-color: var(--button-danger-border);
+    background-color: var(--button-danger-bg-hover);
     color: var(--button-danger-fg);
   }
 
+  .btn-danger {
+    border-color: transparent;
+    background-color: var(--button-danger-solid-bg);
+    color: var(--palette-card);
+    box-shadow: var(--shadow-button);
+  }
+
   .btn-danger:hover {
-    background-color: var(--button-danger-bg-hover);
+    background-color: var(--button-danger-solid-hover);
   }
 
-  /* Progreso del timer. */
-  .progress-track {
-    height: var(--progress-height);
-    border: var(--progress-border-width) solid var(--progress-border-color);
-    background-color: var(--progress-bg);
+  /* Selector de vistas (Bosque / Estadísticas). */
+  .view-switch {
+    display: flex;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border-radius: var(--switch-radius);
+    background-color: var(--switch-bg);
   }
 
-  .progress-fill {
+  .view-switch__button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 0;
+    border-radius: 0.55rem;
+    padding: 0.42rem 0.3rem;
+    background-color: transparent;
+    color: var(--color-muted);
+    font-family: var(--button-font);
+    font-size: 0.71875rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background-color var(--motion-normal) ease,
+      color var(--motion-normal) ease,
+      box-shadow var(--motion-normal) ease;
+  }
+
+  .view-switch__button svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+    flex: 0 0 auto;
+  }
+
+  .view-switch__button:hover {
+    color: var(--color-ink);
+  }
+
+  .view-switch__button[aria-current='page'] {
+    background-color: var(--switch-active-bg);
+    color: var(--color-ink);
+    box-shadow: var(--switch-active-shadow);
+  }
+
+  .view-switch__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .view-switch__button[aria-current='page']:disabled {
+    opacity: 1;
+  }
+
+  .view-switch__button:disabled:hover {
+    color: var(--color-muted);
+  }
+
+  /* Anillo del temporizador. */
+  .timer-phase {
+    margin-top: 0.75rem;
+    text-align: center;
+  }
+
+  .timer-ring {
+    position: relative;
+    width: var(--ring-size);
+    height: var(--ring-size);
+    margin: 0.6rem auto 0.25rem;
+  }
+
+  .timer-ring__svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     height: 100%;
-    background-color: var(--progress-fill-bg);
-    transition: width var(--motion-progress) ease;
+    overflow: visible;
+  }
+
+  .timer-ring__track {
+    fill: none;
+    stroke: var(--ring-track);
+    stroke-width: 8;
+  }
+
+  .timer-ring__fill {
+    fill: none;
+    stroke: url(#timer-ring-gradient);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 80px 80px;
+    transition: stroke-dashoffset var(--motion-progress) linear;
+  }
+
+  .timer-ring__tip-group {
+    transform-origin: 80px 80px;
+    transition: transform var(--motion-progress) linear;
+  }
+
+  .timer-ring__tip {
+    fill: var(--ring-tip-bg);
+    stroke: var(--ring-tip-stroke);
+    stroke-width: 3;
+  }
+
+  .timer-ring__center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .timer-ring__time {
+    font-size: var(--type-timer-size);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .timer-ring__caption {
+    font-size: var(--type-micro-size);
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .timer-today {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.375rem;
+    padding: 0 0.1875rem;
+    font-size: var(--type-micro-size);
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .timer-today strong {
+    font-size: 0.78125rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .timer-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+  }
+
+  .timer-actions .btn {
+    flex: 1;
+    gap: 0.35rem;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.78125rem;
+  }
+
+  .timer-actions .btn svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+
+  /* Tarjeta de sesión. */
+  .session-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-icon);
+    background-color: color-mix(in srgb, var(--palette-accent) 22%, var(--palette-card));
+    color: var(--palette-primary);
+  }
+
+  .session-icon svg {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  .stage-track {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    margin: 0.875rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .stage-track::before {
+    content: '';
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 4px;
+    height: 2px;
+    border-radius: 2px;
+    background-color: rgba(32, 63, 59, 0.12);
+  }
+
+  .stage-track__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 1.625rem;
+  }
+
+  .stage-track__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    border: 2px solid rgba(32, 63, 59, 0.18);
+    background-color: var(--card-bg-session);
+  }
+
+  .stage-track__item--done .stage-track__dot {
+    border-color: var(--palette-active);
+    background-color: var(--palette-active);
+  }
+
+  .stage-track__item--current .stage-track__dot {
+    border-color: var(--palette-active);
+    background-color: var(--palette-accent);
+  }
+
+  .stage-track__label {
+    font-size: 0.59375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+  }
+
+  .stage-track__item--current .stage-track__label {
+    color: var(--color-primary);
+  }
+
+  .session-data {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0.75rem 0 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(32, 63, 59, 0.09);
+  }
+
+  .session-data__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.15rem 0;
+  }
+
+  .session-data__label {
+    font-size: var(--type-caption-size);
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .session-data__value {
+    font-size: 0.71875rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--color-ink);
+  }
+
+  .session-data__value--strong {
+    font-size: 0.78125rem;
+    font-weight: 700;
   }
 
   /* Avisos. Combinan con .card; el tono se elige acá, no en el TSX. */
+  .toast {
+    animation: toast-in 280ms var(--ease-soft) both;
+  }
+
   .toast--success {
     background-color: var(--toast-success-bg);
   }
@@ -227,15 +569,23 @@
     background-color: var(--toast-info-bg);
   }
 
-  .dialog-backdrop {
-    background-color: var(--dialog-backdrop);
+  .break-prompt {
+    animation: prompt-in 320ms var(--ease-soft) both;
   }
 
-  /* Control de zoom de la pradera. */
+  .dialog-backdrop {
+    background-color: var(--dialog-backdrop);
+    animation: fade-in 180ms ease both;
+  }
+
+  /* Control de zoom flotante, abajo a la derecha de la pantalla. */
   .zoom-control {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 40;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    gap: 0.125rem;
     border: var(--zoom-border-width) solid var(--zoom-border-color);
     border-radius: var(--zoom-radius);
     background-color: var(--zoom-bg);
@@ -244,60 +594,76 @@
   }
 
   .zoom-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: var(--border-medium) solid var(--button-border-color);
-    border-radius: var(--radius);
-    background-color: var(--button-secondary-bg);
-    color: var(--button-secondary-fg);
-    font-family: var(--font-sans);
-    font-size: var(--type-body-size);
-    font-weight: 700;
-    line-height: 1;
-    box-shadow: var(--shadow-soft);
+    display: grid;
+    place-items: center;
+    width: var(--zoom-button-size);
+    height: var(--zoom-button-size);
+    border: 0;
+    border-radius: var(--zoom-button-radius);
+    background-color: transparent;
+    color: var(--color-ink);
     cursor: pointer;
     transition:
-      background-color var(--motion-normal) ease,
-      transform var(--motion-fast) ease,
-      box-shadow var(--motion-fast) ease;
+      background-color var(--motion-fast) ease,
+      opacity var(--motion-fast) ease;
+  }
+
+  .zoom-button svg {
+    width: var(--zoom-icon-size);
+    height: var(--zoom-icon-size);
   }
 
   .zoom-button:hover {
-    background-color: var(--button-secondary-bg-hover);
-    transform: translate(-1px, -1px);
-    box-shadow: var(--shadow-hard);
-  }
-
-  .zoom-button:active {
-    transform: translate(1px, 1px);
-    box-shadow: none;
+    background-color: rgba(32, 63, 59, 0.07);
   }
 
   .zoom-button:disabled,
-  .zoom-button:disabled:hover,
-  .zoom-button:disabled:active {
-    opacity: 0.45;
+  .zoom-button:disabled:hover {
+    opacity: 0.35;
     cursor: not-allowed;
+    background-color: transparent;
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
     transform: none;
-    box-shadow: var(--shadow-soft);
   }
+}
 
-  .zoom-slider {
-    width: var(--zoom-slider-width);
-    accent-color: var(--color-primary);
-    cursor: pointer;
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
-  .zoom-value {
-    min-width: 2.75rem;
-    color: var(--color-muted);
-    font-family: var(--font-sans);
-    font-size: var(--type-caption-size);
-    font-variant-numeric: tabular-nums;
-    text-align: center;
+@keyframes prompt-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

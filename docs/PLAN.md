@@ -65,7 +65,7 @@ Las opciones, comparadas:
 | Zustand | Guarda el estado y lo conserva en el navegador. | Fase 4 |
 | Vitest | Pruebas automáticas de timer, crecimiento, estadísticas y colocación. | Fase 2 |
 | oxlint + Prettier | Revisan el código y lo mantienen con un formato uniforme. | Fase 1 |
-| @fontsource | Sirve Nunito y Press Start 2P desde el propio sitio, sin CDN. | Fase 1 |
+| @fontsource | Sirve Nunito y Quicksand desde el propio sitio, sin CDN. | Fase 1 |
 | Vercel | Publica la web gratis y la actualiza con cada cambio subido. | Fase 1 |
 | Supabase | Cuentas, base de datos y tiempo real para bosques compartidos. | v0.3 |
 | Plugin PWA de Vite | Permite instalar la web en el celular y usarla con mala conexión. | v0.3 |
@@ -92,10 +92,10 @@ Las opciones, comparadas:
 - **Pradera:** grilla isométrica de 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante.
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
-- **Interfaz:** vista Bosque y vista Estadísticas. Durante la sesión se esconden los paneles y quedan el timer, pausa y abandonar.
-- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con slider, botones y rueda del mouse. En desktop los niveles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
+- **Interfaz:** vista Bosque y vista Estadísticas, con el selector dentro de la tarjeta del timer. La tarjeta de sesión queda visible durante el enfoque (también en pausa) y se oculta en descanso. El selector se deshabilita mientras hay una sesión activa; timer, pausa y abandonar siguen a mano.
+- **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con tres botones flotantes (acercar, alejar, restablecer) y rueda del mouse. No hay slider ni porcentaje visible. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
 
-- **Arrastre de la pradera:** con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página, sin cambiar el cursor. El diorama se centra verticalmente y los límites se miden simétricamente desde ese centro. El recorrido base escala con el zoom y suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para conservarse proporcional al zoomear. El botón `1×` restablece el zoom y recentra. El arrastre no modifica el timer, los árboles ni el store.
+- **Arrastre de la pradera:** con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página, sin cambiar el cursor. El diorama se centra verticalmente y los límites se miden simétricamente desde ese centro. El recorrido base escala con el zoom y suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para conservarse proporcional al zoomear. El botón de retícula restablece el zoom y recentra. El arrastre no modifica el timer, los árboles ni el store.
 
 ### Después
 
@@ -146,7 +146,7 @@ focus-forest/
       timer.ts             restante, pausa, reanudar, vencimiento
       growth.ts            minutos → etapa
       stats.ts             hoy y totales
-      placement.ts         siguiente celda libre aleatoria y espaciada
+      placement.ts         siguiente celda libre aleatoria, sin espaciamiento
       day.ts               día local
       zoom.ts              límites, escala base entera, niveles enteros y formato
     render/
@@ -203,7 +203,7 @@ Si hiciera falta recrear el proyecto desde cero:
 ```
 npm create vite@latest focus-forest -- --template react-ts
 cd focus-forest
-npm install zustand @fontsource/nunito @fontsource/press-start-2p
+npm install zustand @fontsource/nunito @fontsource/quicksand
 npm install -D tailwindcss @tailwindcss/vite vitest prettier
 ```
 
@@ -232,30 +232,31 @@ Modo oscuro: fuera de la v0.1. Fondo #203f3b con texto #e9edd0, para más adelan
 
 ### Tipografía
 
-- **Nunito** para textos y números; **Press Start 2P** solo para el título y etiquetas muy cortas.
-- El timer usa Nunito en tamaño grande, con dígitos de ancho fijo (`font-variant-numeric: tabular-nums`). Texto mínimo de 16 px.
+- **Nunito** para textos, títulos y números; **Quicksand 600** para botones y controles. Sin pixel fonts en el DOM.
+- El timer usa Nunito en tamaño grande y peso 700, con dígitos de ancho fijo (`font-variant-numeric: tabular-nums`). Texto mínimo de 16 px en el cuerpo; las etiquetas micro pueden ser menores.
 - Ambas fuentes se sirven desde `@fontsource`, sin CDN.
 
 ### Forma y movimiento
 
-- Bordes de 2 a 3 px, esquinas rectas o con recorte escalonado, sombras duras sin desenfoque y sin degradados.
-- Íconos en pixel art de 16×16 o 24×24, escalados solo a múltiplos enteros.
+- Esquinas de 12 a 16 px, bordes finos translúcidos, sombras muy tenues y sin degradados salvo el anillo del temporizador. Nada de marcos duros ni recortes escalonados en el DOM.
+- Íconos de línea simple de 16 a 24 px, con el trazo del tema; no dependen de una librería externa.
 - La pradera usa escala base entera (1×, 2×…) y `image-rendering: pixelated`; el zoom también se mantiene en escalas enteras. El canvas interno se ajusta a píxeles físicos.
-- Animaciones de 200 a 400 ms, sin rebotes ni parpadeos, respetando `prefers-reduced-motion`.
+- Animaciones de 200 a 450 ms, sin rebotes ni parpadeos, respetando `prefers-reduced-motion`.
 - Sonido apagado por defecto; en la v0.1 no hay sonido.
 
 ### Composición de la pantalla
 
-- **Escritorio:** diorama de 960×800 centrado (2× de la escena 480×400), con la tarjeta de sesión a la izquierda y el timer a la derecha. La pradera es el centro; los paneles no compiten con ella.
-- **Durante una sesión:** se esconden las pestañas y los paneles; quedan el timer, pausa y abandonar.
+- **Escritorio:** diorama de 960×800 centrado (2× de la escena 480×400), con la tarjeta de sesión a la izquierda y el timer a la derecha. Las tarjetas se anclan a 16 px de los bordes de la ventana y crecen con el ancho de la pantalla; el timer es más ancho que la tarjeta de sesión. La pradera es el centro; los paneles no compiten con ella.
+- **Durante una sesión:** el selector de vistas se deshabilita; vuelve a aparecer la tarjeta de sesión con el crecimiento en vivo, y timer, pausa y abandonar siguen a mano.
 - **Mobile:** fuera del alcance de la v0.1. La app no debe romperse a 360 px, pero el layout completo se diseña después. Una pradera isométrica 2:1 es una banda ancha; no puede ocupar el 80 % de una pantalla vertical sin recortar o hacer zoom.
 - **Lenguaje amable:** nada de mensajes de castigo; al abandonar, un aviso sereno.
 
 ### Qué evitar
 
 - Colores saturados fuera de la paleta (rojos, azules y violetas intensos).
-- Degradados, sombras difusas y esquinas muy redondeadas de app moderna.
-- Íconos de línea fina de librerías genéricas.
+- Degradados en botones o tarjetas, sombras difusas fuertes y estética genérica de app moderna.
+- Tipografía pixel y marcos duros en el DOM.
+- Íconos de librerías genéricas que no sigan el trazo del tema.
 - Ventanas emergentes que interrumpan el enfoque.
 - Sprites nuevos que no usen la paleta ni el contorno oscuro de los actuales.
 

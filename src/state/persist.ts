@@ -1,5 +1,6 @@
 import { createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
+import { reportStorageIssue, useStorageStatus, type StorageIssue } from './storageStatus'
 import type { ActiveSession, Cell, FocusRecord, PersistedV1, Tree, TreeStage } from './types'
 
 export const STORAGE_KEY = 'focus-forest'
@@ -8,53 +9,6 @@ export const PERSIST_VERSION = 1
 export function emptyState(): PersistedV1 {
   return { version: 1, trees: [], sessions: [], active: null }
 }
-
-/**
- * localStorage puede fallar por cuota, modo privado o JSON corrupto.
- * En ese caso se conserva una copia del dato roto y se arranca limpio,
- * sin romper la app.
- */
-const safeStorage: StateStorage = {
-  getItem: (name) => {
-    try {
-      const raw = localStorage.getItem(name)
-      if (raw === null) {
-        return null
-      }
-
-      JSON.parse(raw)
-      return raw
-    } catch {
-      try {
-        const raw = localStorage.getItem(name)
-        if (raw !== null) {
-          localStorage.setItem(`${name}.broken`, raw)
-          localStorage.removeItem(name)
-        }
-      } catch {
-        // Sin almacenamiento disponible.
-      }
-
-      return null
-    }
-  },
-  setItem: (name, value) => {
-    try {
-      localStorage.setItem(name, value)
-    } catch {
-      // Cuota llena o modo privado: se sigue en memoria.
-    }
-  },
-  removeItem: (name) => {
-    try {
-      localStorage.removeItem(name)
-    } catch {
-      // Sin almacenamiento disponible.
-    }
-  },
-}
-
-export const persistStorage = createJSONStorage<PersistedV1>(() => safeStorage)
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -118,6 +72,38 @@ function isActiveSession(value: unknown): value is ActiveSession {
   )
 }
 
+/** Valida el estado completo; se usa al leer la versión actual. */
+export function isPersistedState(value: unknown): value is PersistedV1 {
+  return (
+    isRecord(value) &&
+    value.version === PERSIST_VERSION &&
+    Array.isArray(value.trees) &&
+    value.trees.every(isTree) &&
+    Array.isArray(value.sessions) &&
+    value.sessions.every(isFocusRecord) &&
+    (value.active === null || isActiveSession(value.active))
+  )
+}
+
+interface PersistedEnvelope {
+  state: unknown
+  version: unknown
+}
+
+function parseEnvelope(raw: string): PersistedEnvelope | null {
+  try {
+    const value: unknown = JSON.parse(raw)
+
+    if (!isRecord(value) || !('state' in value) || !('version' in value)) {
+      return null
+    }
+
+    return { state: value.state, version: value.version }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Acepta datos de cualquier versión y conserva solo lo que tenga la forma
  * esperada. Una versión futura compatible no se borra; una entrada rota se
@@ -131,3 +117,148 @@ export function migrate(persisted: unknown, _version: number): PersistedV1 {
 
   return { version: 1, trees, sessions, active }
 }
+
+type GetStorage = () => Storage | null
+type ReportIssue = (issue: StorageIssue) => void
+
+function defaultGetStorage(): Storage | null {
+  return typeof localStorage === 'undefined' ? null : localStorage
+}
+
+function backupState(storage: Storage, name: string, raw: string): boolean {
+  try {
+    const baseKey = `${name}.broken`
+    const backupKey = storage.getItem(baseKey) === null ? baseKey : `${baseKey}.${Date.now()}`
+
+    storage.setItem(backupKey, raw)
+
+    try {
+      storage.removeItem(name)
+    } catch {
+      // Si no se puede borrar, la copia ya está a salvo.
+    }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Envuelve localStorage con tres protecciones:
+ * - datos dañados: copia en `focus-forest.broken` y reinicio;
+ * - versión más nueva: aviso y escrituras bloqueadas, sin tocar el original;
+ * - almacenamiento bloqueado o lleno: aviso y estado solo en memoria.
+ */
+export function createSafeStorage(
+  getStorage: GetStorage = defaultGetStorage,
+  reportIssue: ReportIssue = reportStorageIssue,
+): StateStorage {
+  let writesBlocked = false
+
+  return {
+    getItem: (name) => {
+      let storage: Storage | null
+
+      try {
+        storage = getStorage()
+      } catch {
+        reportIssue({ kind: 'unavailable' })
+        return null
+      }
+
+      if (!storage) {
+        reportIssue({ kind: 'unavailable' })
+        return null
+      }
+
+      let raw: string | null
+      try {
+        raw = storage.getItem(name)
+      } catch {
+        reportIssue({ kind: 'unavailable' })
+        return null
+      }
+
+      if (raw === null) {
+        return null
+      }
+
+      const resetCorrupt = (): null => {
+        const backedUp = backupState(storage, name, raw)
+        if (!backedUp) {
+          writesBlocked = true
+        }
+        reportIssue(backedUp ? { kind: 'corrupt' } : { kind: 'unavailable' })
+        return null
+      }
+
+      const envelope = parseEnvelope(raw)
+      if (!envelope) {
+        return resetCorrupt()
+      }
+
+      if (typeof envelope.version !== 'number' || !Number.isFinite(envelope.version)) {
+        return resetCorrupt()
+      }
+
+      if (envelope.version > PERSIST_VERSION) {
+        writesBlocked = true
+        reportIssue({ kind: 'future-version', version: envelope.version })
+        return null
+      }
+
+      if (envelope.version === PERSIST_VERSION && !isPersistedState(envelope.state)) {
+        return resetCorrupt()
+      }
+
+      return raw
+    },
+
+    setItem: (name, value) => {
+      if (writesBlocked) {
+        return
+      }
+
+      let storage: Storage | null
+      try {
+        storage = getStorage()
+      } catch {
+        reportIssue({ kind: 'unavailable' })
+        return
+      }
+
+      if (!storage) {
+        reportIssue({ kind: 'unavailable' })
+        return
+      }
+
+      try {
+        storage.setItem(name, value)
+
+        // Si el almacenamiento se recuperó, el aviso deja de aplicar.
+        if (useStorageStatus.getState().issue?.kind === 'unavailable') {
+          useStorageStatus.getState().dismiss()
+        }
+      } catch {
+        reportIssue({ kind: 'unavailable' })
+      }
+    },
+
+    removeItem: (name) => {
+      if (writesBlocked) {
+        return
+      }
+
+      try {
+        const storage = getStorage()
+        storage?.removeItem(name)
+      } catch {
+        reportIssue({ kind: 'unavailable' })
+      }
+    },
+  }
+}
+
+export const safeStorage = createSafeStorage()
+export const persistStorage = createJSONStorage<PersistedV1>(() => safeStorage)

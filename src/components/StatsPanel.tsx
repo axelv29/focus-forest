@@ -1,8 +1,16 @@
+import { ViewSwitch } from '@/components/ViewSwitch'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
+import type { View } from '@/config/views'
 import { selectStats } from '@/state/selectors'
 import { useStore } from '@/state/store'
 
-export function StatsPanel({ now }: { now: number }) {
+interface StatsPanelProps {
+  now: number
+  view: View
+  onChangeView: (view: View) => void
+}
+
+export function StatsPanel({ now, view, onChangeView }: StatsPanelProps) {
   const sessions = useStore((state) => state.sessions)
   const trees = useStore((state) => state.trees)
   const stats = selectStats(sessions, trees, now)
@@ -10,10 +18,14 @@ export function StatsPanel({ now }: { now: number }) {
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 pb-16" aria-label="Estadísticas">
-      <p className="eyebrow">ESTADÍSTICAS</p>
-      <h2 className="type-title-lg mt-3">Tu bosque en números</h2>
+      <div className="mx-auto mb-7 w-full max-w-xs">
+        <ViewSwitch view={view} onChange={onChangeView} />
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <p className="eyebrow">Estadísticas</p>
+      <h2 className="type-title-lg mt-2">Tu bosque en números</h2>
+
+      <div className="stat-grid mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
           label="Hoy"
           value={`${stats.todayPomodoros}`}
@@ -57,7 +69,7 @@ interface StatCardProps {
 function StatCard({ label, value, unit, detail }: StatCardProps) {
   return (
     <article className="card">
-      <p className="eyebrow">{label.toUpperCase()}</p>
+      <p className="eyebrow">{label}</p>
       <p className="type-stat mt-3">{value}</p>
       <p className="type-body type-muted">{unit}</p>
       <p className="type-caption type-muted mt-2">{detail}</p>

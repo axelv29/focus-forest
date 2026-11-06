@@ -1,10 +1,4 @@
-import {
-  GRID_COLS,
-  GRID_ROWS,
-  MIN_TREE_SPACING_CELLS,
-  TILE_HEIGHT,
-  TILE_WIDTH,
-} from '@/config/grid'
+import { GRID_COLS, GRID_ROWS } from '@/config/grid'
 import type { Cell, Tree } from '@/state/types'
 
 export function cellKey(cell: Cell): string {
@@ -43,18 +37,6 @@ export function cellOrder(cols = GRID_COLS, rows = GRID_ROWS): Cell[] {
   })
 }
 
-function cellDistanceSq(a: Cell, b: Cell): number {
-  const aX = (a.col - a.row) * TILE_WIDTH
-  const aY = (a.col + a.row) * TILE_HEIGHT
-  const bX = (b.col - b.row) * TILE_WIDTH
-  const bY = (b.col + b.row) * TILE_HEIGHT
-
-  const dx = aX - bX
-  const dy = aY - bY
-
-  return dx * dx + dy * dy
-}
-
 export function nextFreeCell(
   occupied: readonly Cell[],
   cols = GRID_COLS,
@@ -62,15 +44,7 @@ export function nextFreeCell(
   random: () => number = Math.random,
 ): Cell | null {
   const taken = new Set(occupied.map(cellKey))
-  const minDistance = MIN_TREE_SPACING_CELLS * TILE_WIDTH
-  const minDistanceSq = minDistance * minDistance
-  const candidates = cellOrder(cols, rows).filter((cell) => {
-    if (taken.has(cellKey(cell))) {
-      return false
-    }
-
-    return occupied.every((other) => cellDistanceSq(cell, other) >= minDistanceSq)
-  })
+  const candidates = cellOrder(cols, rows).filter((cell) => !taken.has(cellKey(cell)))
 
   if (candidates.length === 0) {
     return null
@@ -87,9 +61,9 @@ export interface Placement {
 }
 
 /**
- * Elige dónde va el próximo árbol: aleatoriamente entre las celdas libres y
- * espaciadas. Si no quedan candidatas, reemplaza el marchito más viejo; si solo
- * quedan árboles maduros, devuelve null.
+ * Elige dónde va el próximo árbol: aleatoriamente entre las celdas libres.
+ * Si la grilla está llena, reemplaza el marchito más viejo; si solo quedan
+ * árboles maduros, devuelve null.
  */
 export function choosePlacement(
   trees: readonly Tree[],

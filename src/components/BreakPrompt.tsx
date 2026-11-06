@@ -12,7 +12,7 @@ export function BreakPrompt() {
 
   return (
     <div className="fixed bottom-4 left-1/2 z-40 w-[min(92vw,34rem)] -translate-x-1/2">
-      <div className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="card break-prompt flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="type-title">¿Un descanso de {BREAK_MINUTES} minutos?</p>
           <p className="type-body type-muted">El árbol ya quedó plantado.</p>

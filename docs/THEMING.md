@@ -55,13 +55,15 @@ Variantes de espacio:
 
 Los tokens `--card-*` controlan fondo, texto, borde, radio, sombra y padding. Si querés tarjetas con otra forma, cambiá esos tokens y todas las tarjetas acompañan.
 
+`.card--session` es la tarjeta del árbol: usa el fondo verde muy claro de `--card-bg-session`.
+
 ### 3. Tipografía
 
-Las familias viven en `--theme-font-sans` y `--theme-font-pixel`. Los tamaños viven en `--type-*`.
+Las familias viven en `--theme-font-sans` (Nunito, textos y números) y `--theme-font-button` (Quicksand, botones y controles). Los tamaños viven en `--type-*`.
 
 Clases disponibles:
 
-- `.app-title` — título de la app en Press Start 2P.
+- `.app-title` — título de la app en Nunito.
 - `.eyebrow` — etiqueta corta en mayúsculas (SESIÓN, ENFOQUE, ESTADÍSTICAS).
 - `.type-title` — títulos de tarjeta y diálogo.
 - `.type-title-lg` — título de la vista de estadísticas.
@@ -69,22 +71,28 @@ Clases disponibles:
 - `.type-stat` — número grande de estadística.
 - `.type-body` — texto normal.
 - `.type-caption` — texto secundario chico.
+- `.type-micro` — etiquetas y datos mínimos (pie del anillo, filas de la tarjeta).
 - `.type-muted` — color de texto secundario.
 
-No uses `text-[9px]`, `text-5xl` o `font-pixel` directamente en un componente nuevo si ya existe una clase para ese rol. Así un cambio de escala se hace en un solo lugar.
+No uses `text-[9px]`, `text-5xl` o `font-button` directamente en un componente nuevo si ya existe una clase para ese rol. Así un cambio de escala se hace en un solo lugar.
 
 ### 4. Botones
 
-Base: `.btn`. Variantes: `.btn-primary`, `.btn-secondary`, `.btn-danger`. Tamaño chico: `.btn--sm`.
+Base: `.btn`. Variantes: `.btn-primary`, `.btn-secondary`, `.btn-ghost-danger`, `.btn-danger`. Tamaño chico: `.btn--sm`.
 
 Los tokens `--button-*` controlan borde, padding, radio, sombra y colores. Los estados hover/active también salen de tokens.
 
+`.btn-ghost-danger` es la acción destructiva tranquila: se ve neutra y toma el tinte terracota recién al hover. `.btn-danger` es la confirmación sólida del diálogo.
+
 ### 5. Otros elementos
 
-- `.progress-track` y `.progress-fill` — barra del timer.
+- `.timer-ring`, `.timer-ring__track`, `.timer-ring__fill`, `.timer-ring__tip`, `.timer-ring__time`, `.timer-ring__caption` — anillo del temporizador. Su degradado verde es el único degradado sancionado del tema.
+- `.view-switch`, `.view-switch__button` — selector Bosque / Estadísticas. Se deshabilita durante una sesión activa.
+- `.stage-track` y sus modificadores `--done`, `--current`, `--upcoming` — línea de etapas de la tarjeta de sesión.
+- `.session-data` y sus filas — datos de la sesión.
 - `.toast--success`, `.toast--warning`, `.toast--info` — tono de los avisos. El tono se elige en `CompletionToast.tsx` solo por nombre de clase.
 - `.dialog-backdrop` — fondo del diálogo de confirmación.
-- `.zoom-control`, `.zoom-button`, `.zoom-slider`, `.zoom-value` — control de zoom de la pradera.
+- `.zoom-control`, `.zoom-button` — tres botones flotantes (acercar, alejar, restablecer); no hay slider ni porcentaje visible.
 
 ## Cambiar el tema completo
 

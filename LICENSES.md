@@ -3,7 +3,7 @@
 ## Fuentes
 
 - **Nunito** — SIL Open Font License 1.1. Incluida vía `@fontsource/nunito`.
-- **Press Start 2P** — SIL Open Font License 1.1. Incluida vía `@fontsource/press-start-2p`.
+- **Quicksand** — SIL Open Font License 1.1. Incluida vía `@fontsource/quicksand`.
 
 ## Arte
 

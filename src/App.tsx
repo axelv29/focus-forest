@@ -4,15 +4,16 @@ import { CompletionToast } from '@/components/CompletionToast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DevPanel } from '@/components/DevPanel'
 import { GardenCanvas } from '@/components/GardenCanvas'
+import { PineIcon } from '@/components/icons'
 import { SessionCard } from '@/components/SessionCard'
 import { StatsPanel } from '@/components/StatsPanel'
+import { StorageNotice } from '@/components/StorageNotice'
 import { TimerPanel } from '@/components/TimerPanel'
+import type { View } from '@/config/views'
 import { useCountdown } from '@/hooks/useCountdown'
 import { stageForElapsedMs } from '@/logic/growth'
 import { elapsedMs } from '@/logic/timer'
 import { useStore } from '@/state/store'
-
-type View = 'garden' | 'stats'
 
 function App() {
   const now = useCountdown()
@@ -44,50 +45,41 @@ function App() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-background text-ink">
-      <header className="relative z-30 mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-3">
-        <h1 className="app-title">FOCUS FOREST</h1>
-
-        {!inSession && (
-          <nav className="flex gap-2" aria-label="Vistas">
-            <button
-              type="button"
-              className={`btn btn--sm ${view === 'garden' ? 'btn-primary' : 'btn-secondary'}`}
-              aria-pressed={view === 'garden'}
-              onClick={() => setView('garden')}
-            >
-              Bosque
-            </button>
-            <button
-              type="button"
-              className={`btn btn--sm ${view === 'stats' ? 'btn-primary' : 'btn-secondary'}`}
-              aria-pressed={view === 'stats'}
-              onClick={() => setView('stats')}
-            >
-              Estadísticas
-            </button>
-          </nav>
-        )}
+      <header className="relative z-30 flex w-full items-center px-4 py-3">
+        <div className="brand">
+          <span className="brand-mark">
+            <PineIcon />
+          </span>
+          <h1 className="app-title">Focus Forest</h1>
+        </div>
       </header>
 
-      <main className="pb-8 min-[1400px]:pb-0">
+      <StorageNotice />
+
+      <main className="max-[1399px]:h-[calc(100vh-3.5rem)] max-[1399px]:overflow-x-hidden max-[1399px]:overflow-y-auto pb-8 min-[1400px]:pb-0">
         {view === 'garden' || inSession ? (
-          <div className="relative mx-auto w-full max-w-[1440px]">
+          <div className="relative w-full">
             <div className="relative mx-auto w-full max-w-[1024px]">
               <GardenCanvas trees={trees} active={activePreview} label={label} />
             </div>
 
-            {!inSession && (
-              <div className="relative z-10 mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:left-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
+            {active?.kind === 'focus' && (
+              <div className="relative z-10 mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:left-4 min-[1400px]:top-4 min-[1400px]:mt-0 min-[1400px]:w-[clamp(200px,15vw,300px)] min-[1400px]:px-0">
                 <SessionCard now={now} />
               </div>
             )}
 
-            <div className="relative z-10 mx-auto mt-4 w-full max-w-sm px-4 min-[1400px]:absolute min-[1400px]:right-0 min-[1400px]:top-6 min-[1400px]:mt-0 min-[1400px]:w-56 min-[1400px]:px-0">
-              <TimerPanel now={now} onAbandonRequest={() => setConfirmFor(active?.id ?? null)} />
+            <div className="relative z-10 mx-auto mt-4 w-full max-w-md px-4 min-[1400px]:absolute min-[1400px]:right-4 min-[1400px]:top-4 min-[1400px]:mt-0 min-[1400px]:w-[clamp(260px,20vw,420px)] min-[1400px]:px-0">
+              <TimerPanel
+                now={now}
+                view={view}
+                onChangeView={setView}
+                onAbandonRequest={() => setConfirmFor(active?.id ?? null)}
+              />
             </div>
           </div>
         ) : (
-          <StatsPanel now={now} />
+          <StatsPanel now={now} view={view} onChangeView={setView} />
         )}
       </main>
 

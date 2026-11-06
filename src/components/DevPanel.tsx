@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { choosePlacement } from '@/logic/placement'
+import { cellKey, cellOrder, choosePlacement } from '@/logic/placement'
 import { useStore } from '@/state/store'
-import type { TreeStage, TreeState } from '@/state/types'
+import type { Tree, TreeStage, TreeState } from '@/state/types'
 
 const STAGE_OPTIONS: readonly { value: TreeStage; label: string }[] = [
   { value: 1, label: 'Brote' },
@@ -51,11 +51,38 @@ export function DevPanel() {
     setState({ trees: [] })
   }
 
+  const fillGarden = () => {
+    const taken = new Set(trees.map((tree) => cellKey(tree.cell)))
+    const now = Date.now()
+    const added: Tree[] = cellOrder()
+      .filter((cell) => !taken.has(cellKey(cell)))
+      .map((cell, index) => ({
+        id: `dev-tree-${now}-${index}-${Math.random().toString(16).slice(2)}`,
+        sessionId: 'dev-session',
+        cell,
+        stage: 1,
+        state: 'mature',
+        createdAt: now + index,
+      }))
+
+    if (added.length > 0) {
+      setState({ trees: [...trees, ...added] })
+    }
+  }
+
+  const setAllStages = (stage: TreeStage) => {
+    setState({ trees: trees.map((tree) => ({ ...tree, stage })) })
+  }
+
+  const setAllStates = (state: TreeState) => {
+    setState({ trees: trees.map((tree) => ({ ...tree, state })) })
+  }
+
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-64 max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-4 left-4 z-40 hidden w-64 max-w-[calc(100vw-2rem)] md:block">
       <button
         type="button"
-        className="btn btn-primary btn--sm"
+        className="btn btn-secondary btn--sm"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
@@ -74,16 +101,58 @@ export function DevPanel() {
             <button type="button" className="btn btn-primary btn--sm" onClick={addTree}>
               Agregar árbol
             </button>
+            <button type="button" className="btn btn-secondary btn--sm" onClick={fillGarden}>
+              Llenar bosque
+            </button>
             <button type="button" className="btn btn-secondary btn--sm" onClick={clearTrees}>
               Limpiar bosque
             </button>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Cambiar todos</p>
+
+            <p className="type-caption type-muted mt-2">Etapa</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {STAGE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className="btn btn-secondary btn--sm"
+                  disabled={trees.length === 0}
+                  onClick={() => setAllStages(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="type-caption type-muted mt-2">Estado</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={trees.length === 0}
+                onClick={() => setAllStates('mature')}
+              >
+                Vivos
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={trees.length === 0}
+                onClick={() => setAllStates('withered')}
+              >
+                Marchitos
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 space-y-2">
             {trees.map((tree) => (
               <div
                 key={tree.id}
-                className="flex flex-wrap items-center justify-between gap-2 border border-bark/30 p-2"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/10 p-2"
               >
                 <span className="type-caption type-muted">{tree.id}</span>
 
