@@ -275,6 +275,404 @@
     background-color: var(--button-danger-solid-hover);
   }
 
+  /* Botón solo ícono, sin caja: tuerca, volver, previsualizar tono. */
+  .icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+
+  .icon-button svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .icon-button:hover {
+    background-color: var(--control-bg-hover);
+    color: var(--color-ink);
+  }
+
+  .icon-button:active {
+    background-color: rgba(32, 63, 59, 0.1);
+  }
+
+  /* Fila de la fase: el texto queda centrado y la tuerca flota a la derecha. */
+  .timer-phase-row {
+    position: relative;
+    margin-top: 0.75rem;
+  }
+
+  .timer-settings-button {
+    position: absolute;
+    top: 50%;
+    right: -0.25rem;
+    transform: translateY(-50%);
+    z-index: 1;
+  }
+
+  /* Panel de ajustes: scrollea dentro de la card. */
+  .settings-panel {
+    max-height: min(68vh, 34rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-right: -0.35rem;
+    padding-right: 0.35rem;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  /* El scrollbar se muestra solo con el mouse cerca del borde del panel. */
+  .settings-panel.is-scrollbar-visible {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .settings-panel::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+  }
+
+  .settings-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .settings-panel::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+  }
+
+  .settings-panel.is-scrollbar-visible::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+  }
+
+  .settings-panel.is-scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  /* Desplegable propio: disparador tipo pill y menú redondeado. */
+  .select {
+    display: inline-flex;
+    min-width: 0;
+  }
+
+  .select--block {
+    display: flex;
+    width: 100%;
+  }
+
+  .select__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    min-height: 1.75rem;
+    border: var(--control-border-width) solid var(--control-border-color);
+    border-radius: var(--control-radius);
+    background-color: var(--control-bg);
+    color: var(--control-fg);
+    padding: 0.28rem 0.5rem 0.28rem 0.6rem;
+    font-family: var(--theme-font-sans);
+    font-size: var(--control-font-size);
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+    transition:
+      border-color var(--motion-fast) ease,
+      background-color var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease;
+  }
+
+  .select__trigger:hover {
+    background-color: var(--control-bg-hover);
+  }
+
+  .select__trigger:focus-visible {
+    border-color: var(--focus-ring-color);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 20%, transparent);
+  }
+
+  .select__trigger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .select--block .select__trigger {
+    width: 100%;
+  }
+
+  /* Columna numérica: todos los controles comparten ancho y quedan alineados. */
+  .select--numeric .select__trigger {
+    min-width: 3.3rem;
+  }
+
+  .select__value {
+    white-space: nowrap;
+  }
+
+  .select__chevron {
+    width: 0.7rem;
+    height: 0.7rem;
+    flex: 0 0 auto;
+    color: var(--control-chevron);
+    transition: transform var(--motion-normal) var(--ease-soft);
+  }
+
+  .select__trigger[aria-expanded='true'] .select__chevron {
+    transform: rotate(180deg);
+  }
+
+  .select-menu {
+    position: fixed;
+    z-index: 70;
+    margin: 0;
+    padding: 0.3rem;
+    border: var(--control-border-width) solid var(--control-border-color);
+    border-radius: var(--control-menu-radius);
+    background-color: var(--control-bg);
+    box-shadow: var(--shadow-float);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    animation: select-menu-in var(--motion-fast) var(--ease-soft);
+  }
+
+  .select-menu:hover {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .select-menu::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+  }
+
+  .select-menu::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+  }
+
+  .select-menu:hover::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+  }
+
+  .select-menu__list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .select-option {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 0;
+    border-radius: var(--control-option-radius);
+    background-color: transparent;
+    padding: 0.3rem 0.5rem;
+    color: var(--control-fg);
+    font-family: var(--theme-font-sans);
+    font-size: var(--control-font-size);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--motion-fast) ease;
+  }
+
+  .select-option.is-active,
+  .select-option:hover {
+    background-color: var(--control-bg-hover);
+  }
+
+  .select-option.is-selected {
+    color: var(--palette-primary);
+    font-weight: 700;
+  }
+
+  .select-option.is-selected::after {
+    content: '';
+    width: 0.62rem;
+    height: 0.62rem;
+    flex: 0 0 auto;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a684f' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
+
+  /* Ayuda contextual: ícono de info y popover con el lenguaje del menú. */
+  .settings-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .info-tip {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .info-tip__trigger {
+    display: grid;
+    place-items: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+    color: var(--palette-muted);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      color var(--motion-fast) ease;
+  }
+
+  .info-tip__trigger:hover,
+  .info-tip__trigger[aria-expanded='true'] {
+    background-color: var(--control-bg-hover);
+    color: var(--palette-primary);
+  }
+
+  .info-tip__trigger:focus-visible {
+    border-radius: var(--radius-pill);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 22%, transparent);
+  }
+
+  .info-tip__trigger svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .info-tip__popover {
+    position: fixed;
+    z-index: 71;
+    width: max-content;
+    max-width: min(15rem, calc(100vw - 1rem));
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    border: var(--control-border-width) solid var(--control-border-color);
+    border-radius: var(--control-menu-radius);
+    background-color: var(--control-bg);
+    box-shadow: var(--shadow-float);
+    color: var(--control-fg);
+    font-family: var(--theme-font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.45;
+    animation: select-menu-in var(--motion-fast) var(--ease-soft);
+  }
+
+  /* Checkboxes con el verde del tema, no el azul del navegador. */
+  .settings-check {
+    appearance: none;
+    flex: 0 0 auto;
+    width: var(--check-size);
+    height: var(--check-size);
+    border: var(--control-border-width) solid var(--check-border-color);
+    border-radius: var(--check-radius);
+    background-color: var(--check-bg);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-fast) ease,
+      border-color var(--motion-fast) ease;
+  }
+
+  .settings-check:checked {
+    border-color: var(--check-checked-bg);
+    background-color: var(--check-checked-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fafaf5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 0.72rem;
+  }
+
+  .settings-check:hover {
+    border-color: var(--check-checked-bg);
+  }
+
+  .settings-check:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Slider de volumen a tono con la paleta. */
+  .settings-range {
+    appearance: none;
+    width: 7rem;
+    height: 1rem;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .settings-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background-color: var(--range-track);
+  }
+
+  .settings-range::-webkit-slider-thumb {
+    appearance: none;
+    margin-top: -0.28rem;
+    width: var(--range-thumb-size);
+    height: var(--range-thumb-size);
+    border: 2px solid var(--range-thumb-border);
+    border-radius: 50%;
+    background-color: var(--range-thumb);
+  }
+
+  .settings-range::-moz-range-track {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background-color: var(--range-track);
+  }
+
+  .settings-range::-moz-range-progress {
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background-color: var(--range-fill);
+  }
+
+  .settings-range::-moz-range-thumb {
+    width: var(--range-thumb-size);
+    height: var(--range-thumb-size);
+    border: 2px solid var(--range-thumb-border);
+    border-radius: 50%;
+    background-color: var(--range-thumb);
+  }
+
+  .settings-range:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Restablecer: acción secundaria y discreta. */
+  .settings-reset {
+    align-self: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-muted);
+    font-family: var(--theme-font-sans);
+    font-size: var(--type-caption-size);
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+  }
+
+  .settings-reset:hover {
+    color: var(--color-ink);
+  }
+
   /* Selector de vistas (Bosque / Estadísticas). */
   .view-switch {
     display: flex;
@@ -337,7 +735,7 @@
 
   /* Anillo del temporizador. */
   .timer-phase {
-    margin-top: 0.75rem;
+    margin-top: 0;
     text-align: center;
   }
 
@@ -346,6 +744,18 @@
     width: var(--ring-size);
     height: var(--ring-size);
     margin: 0.6rem auto 0.25rem;
+  }
+
+  .timer-ring--short-break {
+    --ring-from: var(--ring-short-from);
+    --ring-to: var(--ring-short-to);
+    --ring-tip-stroke: var(--ring-short-to);
+  }
+
+  .timer-ring--long-break {
+    --ring-from: var(--ring-long-from);
+    --ring-to: var(--ring-long-to);
+    --ring-tip-stroke: var(--ring-long-to);
   }
 
   .timer-ring__svg {
@@ -405,6 +815,15 @@
     font-size: var(--type-micro-size);
     font-weight: 500;
     color: var(--color-muted);
+  }
+
+  .timer-ring__tolerance {
+    margin-top: -0.15rem;
+    font-size: calc(var(--type-micro-size) - 0.0625rem);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+    opacity: 0.8;
   }
 
   .timer-today {
@@ -622,6 +1041,17 @@
     opacity: 0.35;
     cursor: not-allowed;
     background-color: transparent;
+  }
+}
+
+@keyframes select-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

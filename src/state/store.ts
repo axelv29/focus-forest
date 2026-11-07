@@ -10,7 +10,7 @@ import {
   pauseSession,
   resumeSession,
 } from '@/logic/timer'
-import type { ActiveSession, FocusRecord, PersistedV2, Tree } from './types'
+import type { ActiveSession, FocusRecord, PersistedV2, PomodoroSettings, Tree } from './types'
 import { DEFAULT_POMODORO_SETTINGS } from './types'
 import { migrate, PERSIST_VERSION, persistStorage, STORAGE_KEY } from './persist'
 
@@ -33,6 +33,7 @@ interface StoreState extends PersistedV2 {
   reconcile: (now: number) => void
   dismissNotice: () => void
   dismissBreak: () => void
+  updateSettings: (patch: Partial<PomodoroSettings>) => void
 }
 
 function makeId(): string {
@@ -127,9 +128,14 @@ export const useStore = create<StoreState>()(
             placement.replacedTreeId === null
               ? currentSessions
               : currentSessions.filter((session) => session.treeId !== placement.replacedTreeId)
-          const session = createFocusSession(makeId(), now, placement.cell)
+          const session = createFocusSession(makeId(), now, placement.cell, get().settings.focusMin)
+          const activeSession: ActiveSession = {
+            ...session,
+            strictPause: get().settings.strictPause,
+            pauseToleranceMin: get().settings.pauseToleranceMin,
+          }
 
-          set({ trees, sessions, active: session, pendingBreak: false, notice: null })
+          set({ trees, sessions, active: activeSession, pendingBreak: false, notice: null })
         },
 
         startBreak: (now) => {
@@ -137,13 +143,24 @@ export const useStore = create<StoreState>()(
             return
           }
 
-          const session = createBreakSession(makeId(), now)
-          set({ active: session, pendingBreak: false, notice: null })
+          const settings = get().settings
+          const completed = get().sessions.filter((s) => s.status === 'completed').length
+          const isLong = completed > 0 && completed % settings.longBreakEvery === 0
+          const breakMin = isLong ? settings.longBreakMin : settings.breakMin
+          const session = createBreakSession(makeId(), now, breakMin)
+
+          set({ active: { ...session, longBreak: isLong }, pendingBreak: false, notice: null })
         },
 
         pause: (now) => {
           const active = get().active
           if (!active) {
+            return
+          }
+
+          // Con pausa estricta la interfaz pide confirmación antes de
+          // abandonar; nunca se pausa ni se marchita en silencio.
+          if (active.strictPause) {
             return
           }
 
@@ -155,7 +172,15 @@ export const useStore = create<StoreState>()(
 
         resume: (now) => {
           const active = get().active
-          if (!active) {
+          if (!active || active.pausedAt === null) {
+            return
+          }
+
+          const toleranceMin = active.pauseToleranceMin ?? 5
+          const toleranceMs = toleranceMin * 60_000
+          const pausedFor = now - active.pausedAt
+          if (toleranceMin > 0 && active.pausedMs + pausedFor > toleranceMs) {
+            get().abandon(now)
             return
           }
 
@@ -236,7 +261,23 @@ export const useStore = create<StoreState>()(
 
         reconcile: (now) => {
           const active = get().active
-          if (!active || !isExpired(active, now)) {
+          if (!active) {
+            return
+          }
+
+          // Tolerancia de pausa agotada mientras estaba pausado.
+          if (active.pausedAt !== null) {
+            const toleranceMin = active.pauseToleranceMin ?? 5
+            const toleranceMs = toleranceMin * 60_000
+            const pausedFor = now - active.pausedAt
+            if (toleranceMin > 0 && active.pausedMs + pausedFor > toleranceMs) {
+              get().abandon(now)
+              return
+            }
+            return
+          }
+
+          if (!isExpired(active, now)) {
             return
           }
 
@@ -257,6 +298,8 @@ export const useStore = create<StoreState>()(
 
         dismissNotice: () => set({ notice: null }),
         dismissBreak: () => set({ pendingBreak: false }),
+        updateSettings: (patch) =>
+          set((state) => ({ settings: { ...state.settings, ...patch } })),
       }
     },
     {

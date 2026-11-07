@@ -77,18 +77,21 @@ function isPomodoroSettings(value: unknown): value is PomodoroSettings {
   if (!isRecord(value)) {
     return false
   }
-  return (
-    typeof value.focusMin === 'number' &&
-    value.focusMin > 0 &&
-    typeof value.breakMin === 'number' &&
-    value.breakMin > 0 &&
-    typeof value.longBreakMin === 'number' &&
-    value.longBreakMin > 0 &&
-    typeof value.longBreakEvery === 'number' &&
-    value.longBreakEvery > 0 &&
-    (value.alarmTone === 'bell' || value.alarmTone === 'chime' || value.alarmTone === 'pulse') &&
-    typeof value.notification === 'boolean'
-  )
+  if (
+    typeof value.focusMin !== 'number' ||
+    value.focusMin <= 0 ||
+    typeof value.breakMin !== 'number' ||
+    value.breakMin <= 0 ||
+    typeof value.longBreakMin !== 'number' ||
+    value.longBreakMin <= 0 ||
+    typeof value.longBreakEvery !== 'number' ||
+    value.longBreakEvery <= 0 ||
+    (value.alarmTone !== 'bell' && value.alarmTone !== 'chime' && value.alarmTone !== 'pulse') ||
+    typeof value.notification !== 'boolean'
+  ) {
+    return false
+  }
+  return true
 }
 
 /** Valida el estado completo; se usa al leer la versión actual. */
@@ -137,7 +140,7 @@ export function migrate(persisted: unknown, _version: number): PersistedV2 {
   const active = isActiveSession(data.active) ? data.active : null
 
   const settings = isPomodoroSettings(data.settings)
-    ? data.settings
+    ? { ...DEFAULT_POMODORO_SETTINGS, ...data.settings }
     : { ...DEFAULT_POMODORO_SETTINGS }
 
   return { version: 2, trees, sessions, active, settings }

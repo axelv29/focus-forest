@@ -34,6 +34,8 @@ export interface ActiveSession {
   strictPause?: boolean
   /** v2: tolerancia acumulada de pausa (minutos). */
   pauseToleranceMin?: number
+  /** v2: true para los descansos largos (distinto color en el anillo). */
+  longBreak?: boolean
 }
 
 export interface FocusRecord {
@@ -56,8 +58,13 @@ export interface PomodoroSettings {
   breakMin: number
   longBreakMin: number
   longBreakEvery: number
+  strictPause: boolean
+  pauseToleranceMin: number
   alarmTone: AlarmTone
   notification: boolean
+  alarmVolume: number
+  autoStartBreak: boolean
+  autoStartFocus: boolean
 }
 
 export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
@@ -65,8 +72,13 @@ export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
   breakMin: 5,
   longBreakMin: 15,
   longBreakEvery: 4,
+  strictPause: false,
+  pauseToleranceMin: 5,
   alarmTone: 'bell',
   notification: true,
+  alarmVolume: 0.6,
+  autoStartBreak: false,
+  autoStartFocus: false,
 }
 
 export interface PersistedV1 {

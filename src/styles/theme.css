@@ -110,11 +110,47 @@
   --switch-active-bg: #fdfdf8;
   --switch-active-shadow: 0 1px 2px rgba(32, 63, 59, 0.12);
 
+  /* Controles de ajustes (selects, checkboxes, sliders, scroll). */
+  --control-bg: #fdfdfb;
+  --control-bg-hover: rgba(32, 63, 59, 0.05);
+  --control-border-color: rgba(32, 63, 59, 0.12);
+  --control-border-width: var(--border-hairline);
+  --control-radius: var(--radius-pill);
+  --control-menu-radius: 14px;
+  --control-option-radius: 10px;
+  --control-padding-y: 0.32rem;
+  --control-padding-x: 0.55rem;
+  --control-fg: var(--palette-ink);
+  --control-font-size: 0.75rem;
+  --control-chevron: var(--palette-muted);
+
+  --check-size: 1rem;
+  --check-radius: 5px;
+  --check-bg: #fdfdfb;
+  --check-border-color: rgba(32, 63, 59, 0.22);
+  --check-checked-bg: var(--palette-cta);
+  --check-checked-mark: var(--palette-card);
+
+  --range-track: rgba(32, 63, 59, 0.12);
+  --range-fill: var(--palette-cta);
+  --range-thumb: var(--palette-card);
+  --range-thumb-border: var(--palette-cta);
+  --range-thumb-size: 0.85rem;
+
+  --scrollbar-size: 5px;
+  --scrollbar-thumb: rgba(32, 63, 59, 0.22);
+  --scrollbar-thumb-hover: rgba(32, 63, 59, 0.38);
+
   /* Anillo del temporizador. */
   --ring-size: 11rem;
   --ring-track: rgba(32, 63, 59, 0.1);
   --ring-from: var(--palette-accent);
   --ring-to: var(--palette-primary);
+  /* Descanso corto: rojo no saturado. Descanso largo: celeste no saturado. */
+  --ring-short-from: #d9a79c;
+  --ring-short-to: #b8786c;
+  --ring-long-from: #a6c2d1;
+  --ring-long-to: #6c92a8;
   --ring-tip-bg: #fdfdf8;
   --ring-tip-stroke: var(--palette-cta);
 

@@ -5,20 +5,34 @@ interface TimerRingProps {
   remainingMs: number
   durationMin: number
   paused: boolean
+  /** Tiempo de tolerancia de pausa restante. `null` si no aplica. */
+  toleranceRemainingMs?: number | null
+  /** Fase actual: enfoque, descanso corto o descanso largo. */
+  variant?: 'focus' | 'shortBreak' | 'longBreak'
 }
 
 const RADIUS = 64
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 /** Anillo de progreso del pomodoro. El relleno avanza en sentido horario. */
-export function TimerRing({ progress, remainingMs, durationMin, paused }: TimerRingProps) {
+export function TimerRing({
+  progress,
+  remainingMs,
+  durationMin,
+  paused,
+  toleranceRemainingMs = null,
+  variant = 'focus',
+}: TimerRingProps) {
   const clamped = Math.min(1, Math.max(0, progress))
   const offset = CIRCUMFERENCE * (1 - clamped)
   const angle = clamped * 360
 
+  const variantClass =
+    variant === 'shortBreak' ? 'timer-ring--short-break' : variant === 'longBreak' ? 'timer-ring--long-break' : ''
+
   return (
     <div
-      className="timer-ring"
+      className={`timer-ring${variantClass ? ` ${variantClass}` : ''}`}
       role="progressbar"
       aria-label="Progreso de la sesión"
       aria-valuemin={0}
@@ -62,6 +76,11 @@ export function TimerRing({ progress, remainingMs, durationMin, paused }: TimerR
       <div className="timer-ring__center">
         <span className="timer-ring__time">{formatClock(remainingMs)}</span>
         <span className="timer-ring__caption">{paused ? 'en pausa' : `de ${durationMin} min`}</span>
+        {paused && toleranceRemainingMs !== null && (
+          <span className="timer-ring__tolerance">
+            tolerancia {formatClock(toleranceRemainingMs)}
+          </span>
+        )}
       </div>
     </div>
   )

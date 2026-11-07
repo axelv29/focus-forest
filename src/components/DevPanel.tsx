@@ -1,7 +1,14 @@
 import { useState } from 'react'
+import { playTone } from '@/logic/alarm'
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+} from '@/logic/notifications'
 import { cellKey, cellOrder, choosePlacement } from '@/logic/placement'
 import { useStore } from '@/state/store'
-import type { Tree, TreeStage, TreeState } from '@/state/types'
+import type { AlarmTone, Tree, TreeStage, TreeState } from '@/state/types'
+import { Select } from './Select'
 
 const STAGE_OPTIONS: readonly { value: TreeStage; label: string }[] = [
   { value: 1, label: 'Brote' },
@@ -10,10 +17,29 @@ const STAGE_OPTIONS: readonly { value: TreeStage; label: string }[] = [
   { value: 4, label: 'Adulto' },
 ]
 
+const TONE_OPTIONS: readonly { value: AlarmTone; label: string }[] = [
+  { value: 'bell', label: 'Campana' },
+  { value: 'chime', label: 'Campanilla' },
+  { value: 'pulse', label: 'Pulso' },
+]
+
+const TREE_STAGE_SELECT_OPTIONS = STAGE_OPTIONS.map((option) => ({
+  value: String(option.value),
+  label: option.label,
+}))
+
+const TREE_STATE_SELECT_OPTIONS = [
+  { value: 'mature', label: 'Vivo' },
+  { value: 'withered', label: 'Marchito' },
+] as const
+
 export function DevPanel() {
   const trees = useStore((state) => state.trees)
+  const active = useStore((state) => state.active)
+  const settings = useStore((state) => state.settings)
   const setState = useStore.setState
   const [open, setOpen] = useState(false)
+  const [permission, setPermission] = useState(getNotificationPermission())
 
   const addTree = () => {
     const placement = choosePlacement(trees, Math.random)
@@ -78,6 +104,30 @@ export function DevPanel() {
     setState({ trees: trees.map((tree) => ({ ...tree, state })) })
   }
 
+  const advanceTime = (ms: number) => {
+    if (!active) {
+      return
+    }
+    setState({ active: { ...active, endsAt: active.endsAt - ms } })
+  }
+
+  const finishNow = () => {
+    if (!active) {
+      return
+    }
+    setState({ active: { ...active, pausedAt: null, endsAt: Date.now() } })
+    useStore.getState().reconcile(Date.now())
+  }
+
+  const handlePermission = async () => {
+    const result = await requestNotificationPermission()
+    setPermission(result)
+  }
+
+  const quickSettings = () => {
+    useStore.getState().updateSettings({ focusMin: 1, breakMin: 1, longBreakMin: 1 })
+  }
+
   return (
     <div className="fixed bottom-4 left-4 z-40 hidden w-64 max-w-[calc(100vw-2rem)] md:block">
       <button
@@ -107,6 +157,157 @@ export function DevPanel() {
             <button type="button" className="btn btn-secondary btn--sm" onClick={clearTrees}>
               Limpiar bosque
             </button>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Sesión</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active !== null}
+                onClick={() => useStore.getState().startFocus(Date.now())}
+              >
+                Iniciar enfoque
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active !== null}
+                onClick={() => useStore.getState().startBreak(Date.now())}
+              >
+                Iniciar descanso
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active === null}
+                onClick={() => advanceTime(10_000)}
+              >
+                −10 s
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active === null}
+                onClick={() => advanceTime(60_000)}
+              >
+                −1 min
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active === null}
+                onClick={() => advanceTime(5 * 60_000)}
+              >
+                −5 min
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active === null}
+                onClick={() => advanceTime(10 * 60_000)}
+              >
+                −10 min
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn--sm"
+                disabled={active === null}
+                onClick={finishNow}
+              >
+                Terminar ahora
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                disabled={active === null}
+                onClick={() => useStore.getState().abandon(Date.now())}
+              >
+                Abandonar
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={() => setState({ pendingBreak: true })}
+              >
+                Forzar descanso
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Alarma</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {TONE_OPTIONS.map((tone) => (
+                <button
+                  key={tone.value}
+                  type="button"
+                  className="btn btn-secondary btn--sm"
+                  onClick={() => playTone(tone.value, settings.alarmVolume)}
+                >
+                  {tone.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="btn btn-primary btn--sm"
+                onClick={() => playTone(settings.alarmTone, settings.alarmVolume)}
+              >
+                Tono actual
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Notificación</p>
+            <p className="type-caption type-muted mt-1">Permiso: {permission}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={handlePermission}
+              >
+                Pedir permiso
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={() => sendNotification('Focus Forest', 'Notificación de prueba.')}
+              >
+                Enviar prueba
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Ajustes</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <button type="button" className="btn btn-secondary btn--sm" onClick={quickSettings}>
+                Pomodoro 1 min
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={() => useStore.getState().updateSettings({ autoStartBreak: !settings.autoStartBreak })}
+              >
+                Auto descanso: {settings.autoStartBreak ? 'on' : 'off'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={() => useStore.getState().updateSettings({ autoStartFocus: !settings.autoStartFocus })}
+              >
+                Auto pomodoro: {settings.autoStartFocus ? 'on' : 'off'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn--sm"
+                onClick={() => useStore.getState().updateSettings({ notification: !settings.notification })}
+              >
+                Notificación: {settings.notification ? 'on' : 'off'}
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 border-t border-ink/10 pt-3">
@@ -156,32 +357,25 @@ export function DevPanel() {
               >
                 <span className="type-caption type-muted">{tree.id}</span>
 
-                <select
-                  className="btn btn--sm btn-secondary w-full"
-                  value={tree.stage}
-                  onChange={(event) =>
-                    updateTree(tree.id, Number(event.target.value) as TreeStage, tree.state)
+                <Select
+                  className="select--block"
+                  value={String(tree.stage)}
+                  options={TREE_STAGE_SELECT_OPTIONS}
+                  onChange={(value) =>
+                    updateTree(tree.id, Number(value) as TreeStage, tree.state)
                   }
-                  aria-label={`Cambiar etapa del árbol ${tree.id}`}
-                >
-                  {STAGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  ariaLabel={`Cambiar etapa del árbol ${tree.id}`}
+                />
 
-                <select
-                  className="btn btn--sm btn-secondary w-full"
+                <Select
+                  className="select--block"
                   value={tree.state}
-                  onChange={(event) =>
-                    updateTree(tree.id, tree.stage, event.target.value as TreeState)
+                  options={TREE_STATE_SELECT_OPTIONS}
+                  onChange={(value) =>
+                    updateTree(tree.id, tree.stage, value as TreeState)
                   }
-                  aria-label={`Cambiar estado del árbol ${tree.id}`}
-                >
-                  <option value="mature">Vivo</option>
-                  <option value="withered">Marchito</option>
-                </select>
+                  ariaLabel={`Cambiar estado del árbol ${tree.id}`}
+                />
 
                 <button
                   type="button"
