@@ -21,7 +21,7 @@ export interface Atlas {
 export const SPRITES_ENABLED = true
 
 /** Suelo completo 8×8, a su tamaño nativo (sin escalar). */
-export const GROUND_TILE_URL = '/sprites/tileset8x8.png?v=3'
+export const GROUND_TILE_URL = '/sprites/tileset8x8.png?v=4'
 
 /** Nombre base de cada etapa viva; la versión marchita agrega `.withered`. */
 export const TREE_STAGE_FRAME_NAMES = {

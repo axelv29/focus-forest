@@ -71,9 +71,10 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   // escena. Así el zoom-out nunca pierde píxeles por muestreo.
   const minZoom = minPixelPerfectZoom(basePixelScale)
   const pixelScale = snapPixelScale(basePixelScale * zoom)
-  // 2 px extra: el tileset tiene su vértice en un medio píxel y, al redondear
-  // la traslación, el borde derecho quedaría cortado medio píxel.
-  const canvasWidth = Math.max(1, Math.round(SCENE_WIDTH * pixelScale) + 2)
+  // Margen horizontal escalado: el nuevo tileset tiene detalles de textura que
+  // sobresalen ~1,5 px a la izquierda del diamante; con un margen fijo de 2 px
+  // (no escalado) se recortaba al hacer zoom. Se escalan 4 px (2 por lado).
+  const canvasWidth = Math.max(1, Math.round((SCENE_WIDTH + 4) * pixelScale))
   const canvasHeight = Math.max(1, Math.round(SCENE_HEIGHT * pixelScale))
   const canvasCssWidth = canvasWidth / dpr
   const canvasCssHeight = canvasHeight / dpr

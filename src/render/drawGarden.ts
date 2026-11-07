@@ -40,8 +40,8 @@ const STAGE_SCALE: Record<TreeStage, number> = {
 }
 
 /** Vértice superior de `tileset8x8.png` dentro de la imagen. */
-const GROUND_SHEET_TOP_X = 252.5
-const GROUND_SHEET_TOP_Y = 2
+const GROUND_SHEET_TOP_X = 243.5
+const GROUND_SHEET_TOP_Y = 5
 
 export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOptions): void {
   const pixelWidth = ctx.canvas.width
