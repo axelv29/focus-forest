@@ -10,7 +10,8 @@ import {
   pauseSession,
   resumeSession,
 } from '@/logic/timer'
-import type { ActiveSession, FocusRecord, PersistedV1, Tree } from './types'
+import type { ActiveSession, FocusRecord, PersistedV2, Tree } from './types'
+import { DEFAULT_POMODORO_SETTINGS } from './types'
 import { migrate, PERSIST_VERSION, persistStorage, STORAGE_KEY } from './persist'
 
 export type NoticeKind = 'info' | 'success' | 'warning'
@@ -20,7 +21,7 @@ export interface Notice {
   text: string
 }
 
-interface StoreState extends PersistedV1 {
+interface StoreState extends PersistedV2 {
   pendingBreak: boolean
   notice: Notice | null
   startFocus: (now: number) => void
@@ -65,6 +66,7 @@ export const useStore = create<StoreState>()(
           id: makeId(),
           sessionId: active.id,
           cell: active.cell,
+          kind: 'pino',
           stage: 4,
           state: 'mature',
           createdAt: endedAt,
@@ -91,10 +93,11 @@ export const useStore = create<StoreState>()(
       }
 
       return {
-        version: 1,
+        version: 2,
         trees: [],
         sessions: [],
         active: null,
+        settings: { ...DEFAULT_POMODORO_SETTINGS },
         pendingBreak: false,
         notice: null,
 
@@ -192,6 +195,7 @@ export const useStore = create<StoreState>()(
             id: makeId(),
             sessionId: active.id,
             cell: active.cell,
+            kind: 'pino',
             stage,
             state: 'withered',
             createdAt: now,
@@ -265,6 +269,7 @@ export const useStore = create<StoreState>()(
         trees: state.trees,
         sessions: state.sessions,
         active: state.active,
+        settings: state.settings,
       }),
     },
   ),

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createSafeStorage, emptyState, isPersistedState, migrate } from '@/state/persist'
 import type { StorageIssue } from '@/state/storageStatus'
-import type { ActiveSession, FocusRecord, PersistedV1, Tree } from '@/state/types'
+import type { ActiveSession, FocusRecord, PersistedV2, Tree } from '@/state/types'
+import { DEFAULT_POMODORO_SETTINGS } from '@/state/types'
 
 const TREE: Tree = {
   id: 'tree-1',
@@ -32,11 +33,12 @@ const ACTIVE: ActiveSession = {
   cell: { col: 1, row: 1 },
 }
 
-const STATE: PersistedV1 = {
-  version: 1,
+const STATE: PersistedV2 = {
+  version: 2,
   trees: [TREE],
   sessions: [SESSION],
   active: ACTIVE,
+  settings: { ...DEFAULT_POMODORO_SETTINGS },
 }
 
 function envelope(state: unknown, version: unknown): string {
@@ -119,14 +121,14 @@ describe('isPersistedState', () => {
   })
 
   it('rechaza una versión distinta', () => {
-    expect(isPersistedState({ ...STATE, version: 2 })).toBe(false)
+    expect(isPersistedState({ ...STATE, version: 3 })).toBe(false)
   })
 })
 
 describe('createSafeStorage', () => {
   it('lee un guardado válido sin avisos', () => {
     const { storage } = makeStorage()
-    const raw = envelope(STATE, 1)
+    const raw = envelope(STATE, 2)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -156,7 +158,7 @@ describe('createSafeStorage', () => {
 
   it('respalda y reinicia un estado con forma inválida', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, trees: 'x' }, 1)
+    const raw = envelope({ ...STATE, trees: 'x' }, 2)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -186,7 +188,7 @@ describe('createSafeStorage', () => {
 
   it('no toca una versión más nueva y bloquea las escrituras', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, version: 2 }, 2)
+    const raw = envelope({ ...STATE, version: 3 }, 3)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -196,7 +198,7 @@ describe('createSafeStorage', () => {
 
     expect(safe.getItem('focus-forest')).toBeNull()
     expect(storage.getItem('focus-forest')).toBe(raw)
-    expect(issues).toEqual([{ kind: 'future-version', version: 2 }])
+    expect(issues).toEqual([{ kind: 'future-version', version: 3 }])
 
     safe.setItem('focus-forest', 'nuevo')
     safe.removeItem('focus-forest')

@@ -1,13 +1,14 @@
 import { createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
 import { reportStorageIssue, useStorageStatus, type StorageIssue } from './storageStatus'
-import type { ActiveSession, Cell, FocusRecord, PersistedV1, Tree, TreeStage } from './types'
+import type { ActiveSession, Cell, FocusRecord, PersistedV2, PomodoroSettings, Tree, TreeStage } from './types'
+import { DEFAULT_POMODORO_SETTINGS } from './types'
 
 export const STORAGE_KEY = 'focus-forest'
-export const PERSIST_VERSION = 1
+export const PERSIST_VERSION = 2
 
-export function emptyState(): PersistedV1 {
-  return { version: 1, trees: [], sessions: [], active: null }
+export function emptyState(): PersistedV2 {
+  return { version: 2, trees: [], sessions: [], active: null, settings: { ...DEFAULT_POMODORO_SETTINGS } }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,8 +73,26 @@ function isActiveSession(value: unknown): value is ActiveSession {
   )
 }
 
+function isPomodoroSettings(value: unknown): value is PomodoroSettings {
+  if (!isRecord(value)) {
+    return false
+  }
+  return (
+    typeof value.focusMin === 'number' &&
+    value.focusMin > 0 &&
+    typeof value.breakMin === 'number' &&
+    value.breakMin > 0 &&
+    typeof value.longBreakMin === 'number' &&
+    value.longBreakMin > 0 &&
+    typeof value.longBreakEvery === 'number' &&
+    value.longBreakEvery > 0 &&
+    (value.alarmTone === 'bell' || value.alarmTone === 'chime' || value.alarmTone === 'pulse') &&
+    typeof value.notification === 'boolean'
+  )
+}
+
 /** Valida el estado completo; se usa al leer la versión actual. */
-export function isPersistedState(value: unknown): value is PersistedV1 {
+export function isPersistedState(value: unknown): value is PersistedV2 {
   return (
     isRecord(value) &&
     value.version === PERSIST_VERSION &&
@@ -81,7 +100,8 @@ export function isPersistedState(value: unknown): value is PersistedV1 {
     value.trees.every(isTree) &&
     Array.isArray(value.sessions) &&
     value.sessions.every(isFocusRecord) &&
-    (value.active === null || isActiveSession(value.active))
+    (value.active === null || isActiveSession(value.active)) &&
+    isPomodoroSettings(value.settings)
   )
 }
 
@@ -109,13 +129,18 @@ function parseEnvelope(raw: string): PersistedEnvelope | null {
  * esperada. Una versión futura compatible no se borra; una entrada rota se
  * descarta sin tirar el resto del bosque.
  */
-export function migrate(persisted: unknown, _version: number): PersistedV1 {
+export function migrate(persisted: unknown, _version: number): PersistedV2 {
   const data = isRecord(persisted) ? persisted : {}
+
   const trees = Array.isArray(data.trees) ? data.trees.filter(isTree) : []
   const sessions = Array.isArray(data.sessions) ? data.sessions.filter(isFocusRecord) : []
   const active = isActiveSession(data.active) ? data.active : null
 
-  return { version: 1, trees, sessions, active }
+  const settings = isPomodoroSettings(data.settings)
+    ? data.settings
+    : { ...DEFAULT_POMODORO_SETTINGS }
+
+  return { version: 2, trees, sessions, active, settings }
 }
 
 type GetStorage = () => Storage | null
@@ -261,4 +286,4 @@ export function createSafeStorage(
 }
 
 export const safeStorage = createSafeStorage()
-export const persistStorage = createJSONStorage<PersistedV1>(() => safeStorage)
+export const persistStorage = createJSONStorage<PersistedV2>(() => safeStorage)

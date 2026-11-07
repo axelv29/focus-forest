@@ -2,6 +2,8 @@ export type TreeStage = 1 | 2 | 3 | 4
 export type TreeState = 'mature' | 'withered'
 export type SessionKind = 'focus' | 'break'
 export type FocusStatus = 'completed' | 'abandoned'
+export type TreeKind = string
+export type AlarmTone = 'bell' | 'chime' | 'pulse'
 
 export interface Cell {
   col: number
@@ -12,6 +14,7 @@ export interface Tree {
   id: string
   sessionId: string
   cell: Cell
+  kind?: TreeKind
   stage: TreeStage
   state: TreeState
   createdAt: number
@@ -27,6 +30,10 @@ export interface ActiveSession {
   pausedMs: number
   /** Solo las sesiones de enfoque reservan una celda. */
   cell: Cell | null
+  /** v2: pausa estricta. */
+  strictPause?: boolean
+  /** v2: tolerancia acumulada de pausa (minutos). */
+  pauseToleranceMin?: number
 }
 
 export interface FocusRecord {
@@ -36,6 +43,30 @@ export interface FocusRecord {
   durationMin: number
   status: FocusStatus
   treeId: string
+  /** v2: título de la sesión. */
+  title?: string | null
+  /** v2: descripción de la sesión. */
+  description?: string | null
+  /** v2: tareas con checkboxes. */
+  tasks?: string[]
+}
+
+export interface PomodoroSettings {
+  focusMin: number
+  breakMin: number
+  longBreakMin: number
+  longBreakEvery: number
+  alarmTone: AlarmTone
+  notification: boolean
+}
+
+export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
+  focusMin: 25,
+  breakMin: 5,
+  longBreakMin: 15,
+  longBreakEvery: 4,
+  alarmTone: 'bell',
+  notification: true,
 }
 
 export interface PersistedV1 {
@@ -43,4 +74,12 @@ export interface PersistedV1 {
   trees: Tree[]
   sessions: FocusRecord[]
   active: ActiveSession | null
+}
+
+export interface PersistedV2 {
+  version: 2
+  trees: Tree[]
+  sessions: FocusRecord[]
+  active: ActiveSession | null
+  settings: PomodoroSettings
 }
