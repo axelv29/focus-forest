@@ -73,7 +73,7 @@ export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
   longBreakMin: 15,
   longBreakEvery: 4,
   strictPause: false,
-  pauseToleranceMin: 5,
+  pauseToleranceMin: 0,
   alarmTone: 'bell',
   notification: true,
   alarmVolume: 0.6,

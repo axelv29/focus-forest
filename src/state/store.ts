@@ -176,7 +176,7 @@ export const useStore = create<StoreState>()(
             return
           }
 
-          const toleranceMin = active.pauseToleranceMin ?? 5
+          const toleranceMin = active.pauseToleranceMin ?? 0
           const toleranceMs = toleranceMin * 60_000
           const pausedFor = now - active.pausedAt
           if (toleranceMin > 0 && active.pausedMs + pausedFor > toleranceMs) {
@@ -267,7 +267,7 @@ export const useStore = create<StoreState>()(
 
           // Tolerancia de pausa agotada mientras estaba pausado.
           if (active.pausedAt !== null) {
-            const toleranceMin = active.pauseToleranceMin ?? 5
+            const toleranceMin = active.pauseToleranceMin ?? 0
             const toleranceMs = toleranceMin * 60_000
             const pausedFor = now - active.pausedAt
             if (toleranceMin > 0 && active.pausedMs + pausedFor > toleranceMs) {
