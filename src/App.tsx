@@ -4,7 +4,7 @@ import { CompletionToast } from '@/components/CompletionToast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DevPanel } from '@/components/DevPanel'
 import { GardenCanvas } from '@/components/GardenCanvas'
-import { PineIcon } from '@/components/icons'
+
 import { SessionCard } from '@/components/SessionCard'
 import { StatsPanel } from '@/components/StatsPanel'
 import { StorageNotice } from '@/components/StorageNotice'
@@ -115,9 +115,6 @@ function App() {
     <div className="min-h-screen overflow-hidden bg-background text-ink">
       <header className="relative z-30 flex w-full items-center px-4 py-3">
         <div className="brand">
-          <span className="brand-mark">
-            <PineIcon />
-          </span>
           <h1 className="app-title">Focus Forest</h1>
         </div>
       </header>

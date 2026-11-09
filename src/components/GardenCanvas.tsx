@@ -57,6 +57,9 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const wheelAccumulatorRef = useRef(0)
   const [atlas, setAtlas] = useState<Atlas | null>(null)
   const [groundTile, setGroundTile] = useState<HTMLImageElement | null>(null)
+  // Se pinta el jardín solo cuando los sprites terminaron de cargar:
+  // así no se ven los placeholders antes de tiempo.
+  const [spritesReady, setSpritesReady] = useState(!SPRITES_ENABLED)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [panRatio, setPanRatio] = useState<PanOffset>({ x: 0, y: 0 })
   const [gardenSize, setGardenSize] = useState({ width: 0, height: 0 })
@@ -113,6 +116,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       if (!cancelled) {
         setAtlas(loadedAtlas)
         setGroundTile(loadedTile)
+        setSpritesReady(true)
       }
     })
 
@@ -153,7 +157,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) {
+    if (!canvas || !spritesReady) {
       return
     }
 
@@ -170,7 +174,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     }
 
     drawGarden(ctx, { trees, active, atlas, groundTile })
-  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTile])
+  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTile, spritesReady])
 
   useEffect(() => {
     const garden = gardenRef.current
