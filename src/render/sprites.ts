@@ -1,4 +1,4 @@
-import type { TreeStage, TreeState } from '@/state/types'
+import type { TreeSpecies, TreeStage, TreeState } from '@/state/types'
 
 export interface AtlasFrame {
   x: number
@@ -10,30 +10,28 @@ export interface AtlasFrame {
   sheet: SheetName
 }
 
-export type SheetName = 'alive' | 'withered'
+export type SheetName =
+  | 'pino'
+  | 'pinoMuerto'
+  | 'abedul'
+  | 'abedulMuerto'
+  | 'roble'
+  | 'robleMuerto'
 
 export interface Atlas {
-  images: Record<SheetName, HTMLImageElement>
+  images: Partial<Record<SheetName, HTMLImageElement>>
   frames: Record<string, AtlasFrame>
 }
 
-/** Los dos atlas están en `public/sprites/`; si faltan, se usan placeholders. */
+/** Los atlas están en `public/sprites/`; si faltan, se usan placeholders. */
 export const SPRITES_ENABLED = true
 
 /** Suelo completo 8×8, a su tamaño nativo (sin escalar). */
 export const GROUND_TILE_URL = '/sprites/tileset8x8.png?v=4'
 
-/** Nombre base de cada etapa viva; la versión marchita agrega `.withered`. */
-export const TREE_STAGE_FRAME_NAMES = {
-  1: 'tree.brote',
-  2: 'tree.joven',
-  3: 'tree.maduro',
-  4: 'tree.adulto',
-} as const satisfies Record<TreeStage, string>
-
-export function treeFrameName(stage: TreeStage, state: TreeState): string {
-  const base = TREE_STAGE_FRAME_NAMES[stage]
-  return state === 'withered' ? `${base}.withered` : base
+/** Clave interna de un frame: especie, etapa y estado. */
+export function treeFrameName(species: TreeSpecies, stage: TreeStage, state: TreeState): string {
+  return `${species}.${stage}.${state}`
 }
 
 interface RawFrame {
@@ -44,18 +42,65 @@ interface RawFrame {
   anchor?: [number, number]
 }
 
-const SHEETS = {
-  alive: {
+interface SheetConfig {
+  species: TreeSpecies
+  state: TreeState
+  image: string
+  meta: string
+  prefix: RegExp
+  /** Escala de dibujo propia de la hoja; pisa la escala de la especie. */
+  scale?: number
+}
+
+const SHEETS: Record<SheetName, SheetConfig> = {
+  pino: {
+    species: 'pino',
+    state: 'mature',
     image: '/sprites/pino_atlas.png',
     meta: '/sprites/pino_atlas.json',
-    prefix: /^pino_([1-4])_/,
+    prefix: /^pino_([1-5])_/,
   },
-  withered: {
+  pinoMuerto: {
+    species: 'pino',
+    state: 'withered',
     image: '/sprites/pino_muerto_atlas.png',
     meta: '/sprites/pino_muerto_atlas.json',
-    prefix: /^pino_muerto_([1-4])_/,
+    prefix: /^pino_muerto_([1-5])_/,
   },
-} as const
+  abedul: {
+    species: 'abedul',
+    state: 'mature',
+    image: '/sprites/abedul_vivo_atlas.png?v=4',
+    meta: '/sprites/abedul_vivo_atlas.json?v=4',
+    prefix: /^abedul_([1-5])_/,
+  },
+  abedulMuerto: {
+    species: 'abedul',
+    state: 'withered',
+    image: '/sprites/abedul_muerto_downscale_atlas.png?v=4',
+    meta: '/sprites/abedul_muerto_downscale_atlas.json?v=4',
+    prefix: /^abedul_muerto_([1-5])_/,
+  },
+  roble: {
+    species: 'roble',
+    state: 'mature',
+    image: '/sprites/robles_atlas.png?v=3',
+    meta: '/sprites/robles_atlas.json?v=3',
+    prefix: /^roble_([1-7])_/,
+  },
+  robleMuerto: {
+    species: 'roble',
+    state: 'withered',
+    image: '/sprites/roble_muerto_atlas.png?v=1',
+    meta: '/sprites/roble_muerto_atlas.json?v=1',
+    prefix: /^roble_muerto_([1-7])_/,
+  },
+}
+
+/** Escala de dibujo de una hoja; 1 salvo que la config diga lo contrario. */
+export function sheetScale(sheet: SheetName): number {
+  return SHEETS[sheet].scale ?? 1
+}
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -106,48 +151,66 @@ async function loadSheet(sheet: SheetName): Promise<{
   return { sheet, image, frames: frames as Record<string, RawFrame> }
 }
 
+let atlasPromise: Promise<Atlas | null> | null = null
+
 /**
- * Carga los dos atlas y los normaliza a los nombres que usa el render.
- * Si falta un archivo o un frame, devuelve null y se usan los placeholders.
+ * Carga los atlas una sola vez y los normaliza a los nombres que usa el
+ * render. Si falta el atlas del pino, devuelve null y se usan placeholders;
+ * las demás especies se agregan cuando están disponibles.
  */
-export async function loadAtlas(): Promise<Atlas | null> {
-  try {
-    const [alive, withered] = await Promise.all([loadSheet('alive'), loadSheet('withered')])
-    const frames: Record<string, AtlasFrame> = {}
+export function loadAtlas(): Promise<Atlas | null> {
+  atlasPromise ??= loadAtlasOnce()
+  return atlasPromise
+}
 
-    for (const source of [alive, withered]) {
-      for (const [sourceName, raw] of Object.entries(source.frames)) {
-        if (!isRawFrame(raw)) {
-          continue
-        }
+async function loadAtlasOnce(): Promise<Atlas | null> {
+  const sheetNames = Object.keys(SHEETS) as SheetName[]
+  const results = await Promise.allSettled(sheetNames.map((sheet) => loadSheet(sheet)))
+  const frames: Record<string, AtlasFrame> = {}
+  const images: Partial<Record<SheetName, HTMLImageElement>> = {}
+  let pinoFrames = 0
 
-        const match = sourceName.match(SHEETS[source.sheet].prefix)
-        if (!match) {
-          continue
-        }
+  for (const result of results) {
+    if (result.status !== 'fulfilled') {
+      continue
+    }
 
-        const stage = Number(match[1]) as TreeStage
-        const frameName = treeFrameName(stage, source.sheet === 'alive' ? 'mature' : 'withered')
-        frames[frameName] = {
-          x: raw.x,
-          y: raw.y,
-          w: raw.w,
-          h: raw.h,
-          anchorX: raw.anchor?.[0] ?? raw.w / 2,
-          anchorY: raw.anchor?.[1] ?? raw.h,
-          sheet: source.sheet,
-        }
+    const source = result.value
+    const config = SHEETS[source.sheet]
+    images[source.sheet] = source.image
+
+    for (const [sourceName, raw] of Object.entries(source.frames)) {
+      if (!isRawFrame(raw)) {
+        continue
+      }
+
+      const match = sourceName.match(config.prefix)
+      if (!match) {
+        continue
+      }
+
+      const stage = Number(match[1]) as TreeStage
+      frames[treeFrameName(config.species, stage, config.state)] = {
+        x: raw.x,
+        y: raw.y,
+        w: raw.w,
+        h: raw.h,
+        anchorX: raw.anchor?.[0] ?? raw.w / 2,
+        anchorY: raw.anchor?.[1] ?? raw.h,
+        sheet: source.sheet,
+      }
+
+      if (config.species === 'pino') {
+        pinoFrames += 1
       }
     }
+  }
 
-    if (Object.keys(frames).length < 8) {
-      return null
-    }
-
-    return { images: { alive: alive.image, withered: withered.image }, frames }
-  } catch {
+  if (pinoFrames < 4) {
     return null
   }
+
+  return { images, frames }
 }
 
 /** Carga el suelo completo. Si falla, el render vuelve a la grilla procedural. */
@@ -160,8 +223,9 @@ export async function loadGroundTile(): Promise<HTMLImageElement | null> {
 }
 
 /**
- * Dibuja un frame a su tamaño nativo, anclado abajo al centro por defecto.
- * `baseX` y `baseY` son el punto de apoyo del árbol en la escena.
+ * Dibuja un frame anclado abajo al centro. `scale` adapta el arte de cada
+ * especie al tamaño de la pradera. `baseX` y `baseY` son el punto de apoyo
+ * del árbol en la escena.
  */
 export function drawAtlasFrame(
   ctx: CanvasRenderingContext2D,
@@ -169,22 +233,24 @@ export function drawAtlasFrame(
   name: string,
   baseX: number,
   baseY: number,
+  scale = 1,
 ): boolean {
   const frame = atlas.frames[name]
-  if (!frame) {
+  const image = frame ? atlas.images[frame.sheet] : undefined
+  if (!frame || !image) {
     return false
   }
 
   ctx.drawImage(
-    atlas.images[frame.sheet],
+    image,
     frame.x,
     frame.y,
     frame.w,
     frame.h,
-    baseX - frame.anchorX,
-    baseY - frame.anchorY,
-    frame.w,
-    frame.h,
+    baseX - frame.anchorX * scale,
+    baseY - frame.anchorY * scale,
+    frame.w * scale,
+    frame.h * scale,
   )
   return true
 }

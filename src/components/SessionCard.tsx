@@ -1,11 +1,11 @@
-import { FOREST_NAME, TREE_SPECIES_NAME } from '@/config/forest'
-import { GROWTH_THRESHOLDS } from '@/config/growth'
+import { FOREST_NAME } from '@/config/forest'
+import { speciesConfig, speciesForFocusMin, stageMinuteMark } from '@/config/species'
 import { stageForElapsedMs, stageLabel } from '@/logic/growth'
 import { formatSessionStart, sessionName } from '@/logic/session'
 import { elapsedMs } from '@/logic/timer'
 import { selectStats } from '@/state/selectors'
 import { useStore } from '@/state/store'
-import { PineIcon } from './icons'
+import { TreePreview } from './TreePreview'
 
 export function SessionCard({ now }: { now: number }) {
   const active = useStore((state) => state.active)
@@ -17,11 +17,13 @@ export function SessionCard({ now }: { now: number }) {
     return null
   }
 
-  const stage = stageForElapsedMs(elapsedMs(active, now))
+  const species = speciesForFocusMin(active.durationMin)
+  const config = speciesConfig(species)
+  const stage = stageForElapsedMs(species, elapsedMs(active, now), active.durationMin)
   const name = sessionName('focus', stats.todayPomodoros)
   const started = formatSessionStart(active.startedAt)
-  const title = `${TREE_SPECIES_NAME} · ${stageLabel(stage)}`
-  const detail = `Etapa ${stage} de ${GROWTH_THRESHOLDS.length}`
+  const title = `${config.name} · ${stageLabel(species, stage)}`
+  const detail = `Etapa ${stage} de ${config.stages.length} · ${active.durationMin} min`
 
   return (
     <section className="card card--session w-full" aria-label="Sesión actual">
@@ -29,7 +31,7 @@ export function SessionCard({ now }: { now: number }) {
 
       <div className="mt-2.5 flex items-center gap-2.5">
         <span className="session-icon">
-          <PineIcon />
+          <TreePreview species={species} stage={stage} />
         </span>
         <div>
           <h2 className="type-title">{title}</h2>
@@ -38,14 +40,14 @@ export function SessionCard({ now }: { now: number }) {
       </div>
 
       <ol className="stage-track" aria-label="Etapas de crecimiento">
-        {GROWTH_THRESHOLDS.map((threshold) => {
-          const state =
-            threshold.stage < stage ? 'done' : threshold.stage === stage ? 'current' : 'upcoming'
+        {config.stages.map((item) => {
+          const state = item.stage < stage ? 'done' : item.stage === stage ? 'current' : 'upcoming'
+          const minutes = stageMinuteMark(species, item.stage, active.durationMin)
 
           return (
-            <li key={threshold.stage} className={`stage-track__item stage-track__item--${state}`}>
+            <li key={item.stage} className={`stage-track__item stage-track__item--${state}`}>
               <span className="stage-track__dot" aria-hidden="true" />
-              <span className="stage-track__label">{threshold.minutes}</span>
+              <span className="stage-track__label">{minutes}</span>
             </li>
           )
         })}

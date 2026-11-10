@@ -1,0 +1,72 @@
+{
+  "roble_muerto_1_brote": {
+    "x": 5,
+    "y": 127,
+    "w": 11,
+    "h": 11,
+    "anchor": [
+      5,
+      8
+    ]
+  },
+  "roble_muerto_2_plantin": {
+    "x": 19,
+    "y": 95,
+    "w": 21,
+    "h": 44,
+    "anchor": [
+      10,
+      40
+    ]
+  },
+  "roble_muerto_3_joven": {
+    "x": 43,
+    "y": 84,
+    "w": 27,
+    "h": 54,
+    "anchor": [
+      13,
+      51
+    ]
+  },
+  "roble_muerto_4_maduro": {
+    "x": 73,
+    "y": 54,
+    "w": 36,
+    "h": 84,
+    "anchor": [
+      18,
+      81
+    ]
+  },
+  "roble_muerto_5_grande": {
+    "x": 112,
+    "y": 35,
+    "w": 44,
+    "h": 104,
+    "anchor": [
+      22,
+      100
+    ]
+  },
+  "roble_muerto_6_muygrande": {
+    "x": 159,
+    "y": 17,
+    "w": 52,
+    "h": 120,
+    "anchor": [
+      26,
+      118
+    ]
+  },
+  "roble_muerto_7_adulto": {
+    "x": 214,
+    "y": 5,
+    "w": 64,
+    "h": 133,
+    "anchor": [
+      32,
+      130
+    ]
+  }
+}

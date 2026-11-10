@@ -1,26 +1,36 @@
-import { GROWTH_THRESHOLDS } from '@/config/growth'
-import type { TreeStage } from '@/state/types'
+import { speciesConfig, stageConfig } from '@/config/species'
+import type { TreeSpecies, TreeStage } from '@/state/types'
 
 /**
- * Devuelve la etapa correspondiente a los minutos de enfoque transcurridos.
- * Una sesión de 25 minutos termina siempre en la etapa 4.
+ * Devuelve la etapa correspondiente al porcentaje de pomodoro transcurrido.
+ * Las etapas son proporcionales a la duración de la especie.
  */
-export function stageForMinutes(minutes: number): TreeStage {
-  let stage: TreeStage = 1
+export function stageForMinutes(
+  species: TreeSpecies,
+  minutes: number,
+  durationMin: number,
+): TreeStage {
+  const stages = speciesConfig(species).stages
+  const percent = durationMin > 0 ? (Math.max(0, minutes) / durationMin) * 100 : 100
+  let stage: TreeStage = stages[0].stage
 
-  for (const threshold of GROWTH_THRESHOLDS) {
-    if (minutes >= threshold.minutes) {
-      stage = threshold.stage
+  for (const item of stages) {
+    if (percent >= item.percent) {
+      stage = item.stage
     }
   }
 
   return stage
 }
 
-export function stageForElapsedMs(elapsedMs: number): TreeStage {
-  return stageForMinutes(Math.max(0, elapsedMs) / 60_000)
+export function stageForElapsedMs(
+  species: TreeSpecies,
+  elapsedMs: number,
+  durationMin: number,
+): TreeStage {
+  return stageForMinutes(species, Math.max(0, elapsedMs) / 60_000, durationMin)
 }
 
-export function stageLabel(stage: TreeStage): string {
-  return GROWTH_THRESHOLDS.find((threshold) => threshold.stage === stage)?.label ?? 'Brote'
+export function stageLabel(species: TreeSpecies, stage: TreeStage): string {
+  return stageConfig(species, stage).label
 }

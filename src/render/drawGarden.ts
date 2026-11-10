@@ -10,12 +10,14 @@ import {
   TILE_WIDTH,
   TOP_PADDING,
 } from '@/config/grid'
-import type { Cell, Tree, TreeStage, TreeState } from '@/state/types'
+import { speciesConfig, speciesFromKind } from '@/config/species'
+import type { Cell, Tree, TreeSpecies, TreeStage, TreeState } from '@/state/types'
 import { cellToScreen, sortByDepth } from './iso'
-import { drawAtlasFrame, treeFrameName, type Atlas } from './sprites'
+import { drawAtlasFrame, sheetScale, treeFrameName, type Atlas } from './sprites'
 
 export interface ActiveTreePreview {
   cell: Cell
+  species: TreeSpecies
   stage: TreeStage
 }
 
@@ -28,6 +30,7 @@ export interface DrawGardenOptions {
 
 interface DrawableTree {
   cell: Cell
+  species: TreeSpecies
   stage: TreeStage
   state: TreeState
 }
@@ -37,6 +40,9 @@ const STAGE_SCALE: Record<TreeStage, number> = {
   2: 0.55,
   3: 0.78,
   4: 1,
+  5: 1,
+  6: 1,
+  7: 1,
 }
 
 /** Vértice superior de `tileset8x8.png` dentro de la imagen. */
@@ -68,12 +74,18 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
 
   const trees: DrawableTree[] = options.trees.map((tree) => ({
     cell: tree.cell,
+    species: speciesFromKind(tree.kind),
     stage: tree.stage,
     state: tree.state,
   }))
 
   if (options.active) {
-    trees.push({ cell: options.active.cell, stage: options.active.stage, state: 'mature' })
+    trees.push({
+      cell: options.active.cell,
+      species: options.active.species,
+      stage: options.active.stage,
+      state: 'mature',
+    })
   }
 
   for (const tree of sortByDepth(trees)) {
@@ -161,10 +173,12 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   const { x, y } = cellToScreen(tree.cell)
   const baseY = y + 4
 
-  // Los atlas ya incluyen la sombra pixelada en cada frame.
+  // Los atlas incluyen la sombra pixelada, vivos y marchitos.
   if (atlas) {
-    const frameName = treeFrameName(tree.stage, tree.state)
-    if (drawAtlasFrame(ctx, atlas, frameName, x, baseY)) {
+    const frameName = treeFrameName(tree.species, tree.stage, tree.state)
+    const frame = atlas.frames[frameName]
+    const frameScale = frame ? sheetScale(frame.sheet) : speciesConfig(tree.species).scale
+    if (drawAtlasFrame(ctx, atlas, frameName, x, baseY, frameScale)) {
       return
     }
   }

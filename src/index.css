@@ -107,8 +107,6 @@
     gap: 0.5rem;
   }
 
-
-
   .app-title {
     font-family: var(--font-sans);
     font-size: var(--type-app-title-size);
@@ -483,6 +481,15 @@
   .select-option.is-selected {
     color: var(--palette-primary);
     font-weight: 700;
+  }
+
+  .select-option:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .select-option:disabled:hover {
+    background-color: transparent;
   }
 
   .select-option.is-selected::after {
@@ -863,6 +870,13 @@
   .session-icon svg {
     width: 1.375rem;
     height: 1.375rem;
+  }
+
+  .tree-preview {
+    display: block;
+    width: auto;
+    height: 2.25rem;
+    image-rendering: pixelated;
   }
 
   .stage-track {

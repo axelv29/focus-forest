@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { finalStage, speciesForFocusMin } from '@/config/species'
 import { stageForElapsedMs } from '@/logic/growth'
 import { choosePlacement } from '@/logic/placement'
 import {
@@ -63,12 +64,13 @@ export const useStore = create<StoreState>()(
         // Si la pestaña estuvo cerrada, la sesión terminó en `endsAt`,
         // no cuando se reabrió: así cae en el día correcto.
         const endedAt = Math.min(now, active.endsAt)
+        const species = speciesForFocusMin(active.durationMin)
         const tree: Tree = {
           id: makeId(),
           sessionId: active.id,
           cell: active.cell,
-          kind: 'pino',
-          stage: 4,
+          kind: species,
+          stage: finalStage(species),
           state: 'mature',
           createdAt: endedAt,
         }
@@ -215,12 +217,13 @@ export const useStore = create<StoreState>()(
             return
           }
 
-          const stage = stageForElapsedMs(elapsedMs(active, now))
+          const species = speciesForFocusMin(active.durationMin)
+          const stage = stageForElapsedMs(species, elapsedMs(active, now), active.durationMin)
           const tree: Tree = {
             id: makeId(),
             sessionId: active.id,
             cell: active.cell,
-            kind: 'pino',
+            kind: species,
             stage,
             state: 'withered',
             createdAt: now,
@@ -298,8 +301,7 @@ export const useStore = create<StoreState>()(
 
         dismissNotice: () => set({ notice: null }),
         dismissBreak: () => set({ pendingBreak: false }),
-        updateSettings: (patch) =>
-          set((state) => ({ settings: { ...state.settings, ...patch } })),
+        updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
       }
     },
     {

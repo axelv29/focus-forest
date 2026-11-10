@@ -4,7 +4,7 @@ Reglas del proyecto para cualquier persona o agente que trabaje en este reposito
 
 ## Qué es
 
-App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un pino en una pradera isométrica de 8×8. Abandonar deja el árbol marchito. Todo se guarda en el navegador.
+App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un árbol en una pradera isométrica de 8×8: pino a los 25 minutos, abedul a los 45 y roble desde los 60. Abandonar deja el árbol marchito. Todo se guarda en el navegador.
 
 ## Stack
 
@@ -57,8 +57,12 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Crecimiento
 
-- 4 etapas: 0 brote, 5 joven, 15 maduro, 25 adulto.
-- Una sesión de enfoque completada termina en etapa 4.
+- Especie por duración: 25 min → pino; 45 min o más → abedul; 60 min o más → roble. Se usa el bloque más cercano por debajo (`speciesForFocusMin`).
+- En Ajustes, los tiempos de pomodoro sin una especie configurada (15, 90 y 120) aparecen deshabilitados; al sumar una especie, su duración se habilita sola (`availableFocusMinutes`).
+- Abedul: 5 etapas proporcionales a los 45 minutos (0, 25, 50, 75 y 100 %): brote, plantín, joven, maduro y adulto.
+- Pino: 4 etapas proporcionales a los 25 minutos (0, 20, 60 y 100 %): brote, joven, maduro y adulto.
+- Roble: 7 etapas proporcionales a los 60 minutos (0, 16, 33, 50, 66, 83 y 100 %): brote, plantín, joven, maduro, grande, muy grande y adulto. Los abandonados usan `roble_muerto_atlas.png` (mismos 7 frames).
+- Una sesión de enfoque completada termina en la última etapa de su especie (5 en abedul, 4 en pino, 7 en roble).
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
 - Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
 - La nueva celda se elige aleatoriamente entre las libres, sin espaciamiento mínimo: se pueden ocupar las 64 celdas de la grilla. Si no quedan libres, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio.
@@ -77,7 +81,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - `x = origenX + (col - row) * 30`
 - `y = origenY + (col + row) * 15`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
-- Sprites anclados en la base del tronco; los atlas de 122×92 contienen 4 frames recortados por estado, con la sombra pixelada incluida en cada frame, y se dibujan a tamaño nativo.
+- Sprites anclados en la base del tronco; cada especie usa su atlas y sus frames recortados, todos a tamaño nativo. El pino mide 122×92; el abedul vivo y el marchito miden 187×130 cada uno; el roble mide 314×142 y su marchito 278×144. Todos los frames incluyen la sombra pixelada semitransparente, así que el marco llega un poco más abajo que el arte y el anclaje marca la base del tronco; en horizontal apunta al centro de la sombra para que el árbol quede centrado en su celda.
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
 - Redibujar al cambiar etapa, árboles o tamaño/zoom; no en cada tick del timer.
 
@@ -89,7 +93,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - En desktop las tarjetas se anclan a 16 px de los bordes de la ventana con ancho fluido: el timer es la tarjeta principal y siempre es más ancha que la de sesión.
 - Dos fuentes: Nunito (textos, títulos y timer) y Quicksand 600 (botones y controles). Se sirven desde `@fontsource`.
 - Forma suave: esquinas de 12 a 16 px, bordes finos translúcidos, sombras muy tenues y sin degradados, salvo el anillo del temporizador. Nada de estética pixel en el DOM.
-- La tarjeta de sesión solo aparece mientras corre un enfoque (también en pausa): nombre derivado, día y hora de inicio, estado del árbol y bosque. La línea de etapas resume el crecimiento.
+- La tarjeta de sesión solo aparece mientras corre un enfoque (también en pausa): nombre derivado, día y hora de inicio, estado del árbol y bosque. La línea de etapas resume el crecimiento y el ícono es una miniatura del atlas de la etapa actual.
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: el selector de vistas se deshabilita y no se puede cambiar de ventana; timer, pausa y abandonar siguen a mano.
 - Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con tres botones flotantes (acercar, alejar y restablecer) o con la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1×. No hay slider ni porcentaje visible.
@@ -98,13 +102,27 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - El suelo usa `tileset8x8.png` y los árboles usan sus atlas; los placeholders de `drawGarden.ts` quedan solo como fallback.
 - Mobile no es parte de la v0.1, pero la app no debe romperse a 360 px.
 
+### Sprites y atlas
+
+- Los atlas definitivos no se retocan a mano ni se reescalan con interpolación suave: se generan desde la imagen de IA con `pixelperfect/pixelperfect_atlas.py`, que vive fuera del repo, en la raíz del workspace. La guía completa, parámetros y verificación están en `../pixelperfect/README.md`; leerla antes de generar o reemplazar un atlas.
+- Requisitos: Python 3 con `pillow`, `numpy` y `scipy`.
+- Entrada: una sola fila de sprites ordenados de brote a adulto, sin solaparse en x y separados por al menos una columna vacía. Fondo transparente o liso; si queda fondo atrapado entre ramas, `--bg-all`.
+- Comando base desde la raíz del workspace:
+  `python pixelperfect/pixelperfect_atlas.py <entrada> --ref focus-forest/public/sprites/pino_atlas.png --name <especie> --out pixelperfect/salida_<especie>`
+  Sin referencia: `--heights 11,43,54,85`.
+- `--ref` mide el arte con alfa > 128, no los `h` del JSON. Con el atlas del pino da `[11,43,54,85]`; pasar `13,46,58,89` agranda los árboles. Las etapas extra usan el factor de la última etapa fijada (`--scale` para forzarlo).
+- No cambiar el filtro BOX, el alfa duro 0/255, la semilla 1 del k-means ni el redondeo: son la parte determinista. Nunca LANCZOS ni BICUBIC; las previews y la página escalan solo con NEAREST/`image-rendering: pixelated` y factores enteros.
+- El script no escribe JSON. Después de generar `atlas.png` hay que crear el `.json` con `x/y/w/h` y `anchor` (fórmulas y snippet en la guía). Sin JSON válido, `loadAtlas()` devuelve `null` y el render usa placeholders.
+- Nombres: vivos `^pino_([1-5])_` / `^abedul_([1-5])_` / `^roble_([1-7])_`, marchitos `^pino_muerto_([1-5])_` / `^abedul_muerto_([1-5])_` / `^roble_muerto_([1-7])_`; cada atlas vivo o marchito se carga por separado y el loader exige al menos los 4 frames del pino. La especie se guarda en `Tree.kind`; las sesiones sin especie se leen como pino.
+- Antes de dar por bueno un atlas: revisar `preview_x6.png`, comprobar alfa 0/255, base alineada y paleta común, y verlo en la app a tamaño nativo y en los zoom enteros.
+
 ### Código
 
 - TypeScript strict; evitar `any`.
 - Componentes chicos; lógica fuera de los componentes.
 - Sin `console.log` de depuración.
 - No agregar dependencias sin consultarlo.
-- No implementar funciones fuera de `FICHA_v0.1.md`.
+- No implementar funciones fuera del alcance acordado (`FICHA_v0.1.md` y `FICHA_v2.md`).
 
 ## Definición de terminado
 
@@ -112,4 +130,5 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Tests de la lógica pura.
 - `lint`, `test` y `build` verdes.
 - Sin errores de consola.
+- Si cambió un atlas: `.json` actualizado, 8 frames cargando (sin placeholders) y revisado en la app a tamaño nativo y en los zoom enteros.
 - Documentación actualizada si cambió una decisión.

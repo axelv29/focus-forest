@@ -1,4 +1,5 @@
-export type TreeStage = 1 | 2 | 3 | 4
+export type TreeStage = 1 | 2 | 3 | 4 | 5 | 6 | 7
+export type TreeSpecies = 'pino' | 'abedul' | 'roble'
 export type TreeState = 'mature' | 'withered'
 export type SessionKind = 'focus' | 'break'
 export type FocusStatus = 'completed' | 'abandoned'

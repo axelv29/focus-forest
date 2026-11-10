@@ -66,7 +66,7 @@ describe('pausa', () => {
     expect(resumed.pausedMs).toBe(10 * MINUTE)
     expect(resumed.endsAt).toBe(START + 35 * MINUTE)
     expect(remainingMs(resumed, START + 20 * MINUTE)).toBe(15 * MINUTE)
-    expect(elapsedMs(resumed, START + 35 * MINUTE)).toBe(25 * MINUTE)
+    expect(elapsedMs(resumed, START + 25 * MINUTE)).toBe(15 * MINUTE)
     expect(isExpired(resumed, START + 34 * MINUTE)).toBe(false)
     expect(isExpired(resumed, START + 35 * MINUTE)).toBe(true)
   })

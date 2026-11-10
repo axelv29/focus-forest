@@ -2,6 +2,7 @@ import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { playTone } from '@/logic/alarm'
 import { getNotificationPermission, requestNotificationPermission } from '@/logic/notifications'
 import type { AlarmTone, PomodoroSettings } from '@/state/types'
+import { availableFocusMinutes } from '@/config/species'
 import { BackIcon, VolumeIcon } from './icons'
 import { InfoTip } from './InfoTip'
 import { Select } from './Select'
@@ -13,6 +14,7 @@ interface SettingsPanelProps {
 }
 
 const FOCUS_PRESETS = [15, 25, 45, 60, 90, 120]
+const AVAILABLE_FOCUS_MINUTES = new Set(availableFocusMinutes())
 const BREAK_PRESETS = [3, 5, 10]
 const LONG_BREAK_PRESETS = [10, 15, 20, 30]
 const LONG_BREAK_EVERY = [2, 3, 4, 5]
@@ -24,7 +26,11 @@ const TONE_LABELS: Record<AlarmTone, string> = {
   pulse: 'Pulso',
 }
 
-const FOCUS_OPTIONS = FOCUS_PRESETS.map((value) => ({ value: String(value), label: String(value) }))
+const FOCUS_OPTIONS = FOCUS_PRESETS.map((value) => ({
+  value: String(value),
+  label: String(value),
+  disabled: !AVAILABLE_FOCUS_MINUTES.has(value),
+}))
 const BREAK_OPTIONS = BREAK_PRESETS.map((value) => ({ value: String(value), label: String(value) }))
 const LONG_BREAK_OPTIONS = LONG_BREAK_PRESETS.map((value) => ({
   value: String(value),
@@ -108,7 +114,10 @@ export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps
         <div className="flex items-center justify-between gap-3">
           <span className="settings-label">
             <span className="type-body">Pomodoro</span>
-            <InfoTip label="Más información sobre el pomodoro" text="Tiempo en minutos." />
+            <InfoTip
+              label="Más información sobre el pomodoro"
+              text="Tiempo en minutos. A los 25 minutos crece un pino; a los 45, un abedul; desde los 60, un roble. Los demás tiempos llegan con nuevas especies."
+            />
           </span>
           <Select
             className="select--numeric"
@@ -160,6 +169,9 @@ export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps
             ariaLabel="Descanso largo cada cuántos pomodoros"
           />
         </div>
+        <p className="type-body type-muted">
+          Los tiempos de 15, 90 y 120 minutos llegan cuando haya árboles para esos tiempos.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2">

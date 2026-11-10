@@ -7,6 +7,8 @@ export interface SelectOption {
   label: string
   /** Texto corto para el disparador; el menú sigue mostrando `label`. */
   shortLabel?: string
+  /** Deshabilitada: se muestra pero no se puede seleccionar. */
+  disabled?: boolean
 }
 
 interface SelectProps {
@@ -45,8 +47,9 @@ export function Select({
   const closeMenu = useCallback(() => setOpen(false), [])
 
   const openMenu = useCallback(() => {
-    const index = options.findIndex((option) => option.value === value)
-    setActiveIndex(index >= 0 ? index : 0)
+    const firstEnabled = options.findIndex((option) => !option.disabled)
+    const index = options.findIndex((option) => option.value === value && !option.disabled)
+    setActiveIndex(index >= 0 ? index : Math.max(firstEnabled, 0))
     setOpen(true)
   }, [options, value])
 
@@ -139,9 +142,34 @@ export function Select({
   }, [open, activeIndex, listboxId])
 
   const commit = (option: SelectOption) => {
+    if (option.disabled) {
+      return
+    }
+
     onChange(option.value)
     setOpen(false)
     triggerRef.current?.focus()
+  }
+
+  /** Índices seleccionables (sin las opciones deshabilitadas). */
+  const enabledIndices = options
+    .map((option, index) => (option.disabled ? -1 : index))
+    .filter((index) => index >= 0)
+
+  const moveToEnabled = (delta: 1 | -1) => {
+    if (enabledIndices.length === 0) {
+      return
+    }
+
+    const position = enabledIndices.indexOf(activeIndex)
+    const next =
+      position === -1
+        ? delta === 1
+          ? 0
+          : enabledIndices.length - 1
+        : (position + delta + enabledIndices.length) % enabledIndices.length
+
+    setActiveIndex(enabledIndices[next])
   }
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -157,20 +185,19 @@ export function Select({
           openMenu()
           return
         }
-        const delta = event.key === 'ArrowDown' ? 1 : -1
-        setActiveIndex((index) => (index + delta + options.length) % options.length)
+        moveToEnabled(event.key === 'ArrowDown' ? 1 : -1)
         break
       }
       case 'Home':
-        if (open) {
+        if (open && enabledIndices.length > 0) {
           event.preventDefault()
-          setActiveIndex(0)
+          setActiveIndex(enabledIndices[0])
         }
         break
       case 'End':
-        if (open) {
+        if (open && enabledIndices.length > 0) {
           event.preventDefault()
-          setActiveIndex(options.length - 1)
+          setActiveIndex(enabledIndices[enabledIndices.length - 1])
         }
         break
       case 'Enter':
@@ -180,7 +207,7 @@ export function Select({
           openMenu()
           return
         }
-        if (options[activeIndex]) {
+        if (options[activeIndex] && !options[activeIndex].disabled) {
           commit(options[activeIndex])
         }
         break
@@ -242,10 +269,18 @@ export function Select({
                   role="option"
                   id={`${listboxId}-${index}`}
                   aria-selected={option.value === value}
-                  className={`select-option${index === activeIndex ? ' is-active' : ''}${
-                    option.value === value ? ' is-selected' : ''
+                  aria-disabled={option.disabled || undefined}
+                  disabled={option.disabled}
+                  className={`select-option${
+                    index === activeIndex && !option.disabled ? ' is-active' : ''
+                  }${option.value === value ? ' is-selected' : ''}${
+                    option.disabled ? ' is-disabled' : ''
                   }`}
-                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseEnter={() => {
+                    if (!option.disabled) {
+                      setActiveIndex(index)
+                    }
+                  }}
                   onClick={() => commit(option)}
                 >
                   {option.label}

@@ -1,0 +1,52 @@
+{
+  "abedul_muerto_1_brote": {
+    "x": 2,
+    "y": 108,
+    "w": 10,
+    "h": 14,
+    "anchor": [
+      5,
+      11
+    ]
+  },
+  "abedul_muerto_2_plantin": {
+    "x": 18,
+    "y": 77,
+    "w": 19,
+    "h": 46,
+    "anchor": [
+      9,
+      41
+    ]
+  },
+  "abedul_muerto_3_joven": {
+    "x": 42,
+    "y": 63,
+    "w": 29,
+    "h": 60,
+    "anchor": [
+      14,
+      55
+    ]
+  },
+  "abedul_muerto_4_maduro": {
+    "x": 76,
+    "y": 32,
+    "w": 39,
+    "h": 91,
+    "anchor": [
+      20,
+      87
+    ]
+  },
+  "abedul_muerto_5_adulto": {
+    "x": 121,
+    "y": 3,
+    "w": 61,
+    "h": 120,
+    "anchor": [
+      30,
+      117
+    ]
+  }
+}

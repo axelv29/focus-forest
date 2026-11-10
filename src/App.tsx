@@ -16,6 +16,7 @@ import { elapsedMs } from '@/logic/timer'
 import { playTone } from '@/logic/alarm'
 import { sendNotification } from '@/logic/notifications'
 import { useStore } from '@/state/store'
+import { speciesForFocusMin } from '@/config/species'
 
 type ConfirmMode = 'abandon' | 'strictPause'
 
@@ -35,14 +36,23 @@ function App() {
   const [view, setView] = useState<View>('garden')
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
 
-  const activeStage = active?.kind === 'focus' ? stageForElapsedMs(elapsedMs(active, now)) : null
+  const activeSpecies = active?.kind === 'focus' ? speciesForFocusMin(active.durationMin) : null
+  const activeStage =
+    activeSpecies !== null && active?.kind === 'focus'
+      ? stageForElapsedMs(activeSpecies, elapsedMs(active, now), active.durationMin)
+      : null
   const activePreview = useMemo(() => {
-    if (active?.kind !== 'focus' || !active.cell || activeStage === null) {
+    if (
+      active?.kind !== 'focus' ||
+      !active.cell ||
+      activeStage === null ||
+      activeSpecies === null
+    ) {
       return null
     }
 
-    return { cell: active.cell, stage: activeStage }
-  }, [active, activeStage])
+    return { cell: active.cell, species: activeSpecies, stage: activeStage }
+  }, [active, activeSpecies, activeStage])
 
   const closeConfirm = useCallback(() => setConfirmRequest(null), [])
   const confirmAbandon = useCallback(() => {
@@ -102,7 +112,12 @@ function App() {
 
   // Auto-iniciar pomodoro tras descanso.
   useEffect(() => {
-    if (active === null && !pendingBreak && settings.autoStartFocus && prevActiveRef.current?.kind === 'break') {
+    if (
+      active === null &&
+      !pendingBreak &&
+      settings.autoStartFocus &&
+      prevActiveRef.current?.kind === 'break'
+    ) {
       startFocus(Date.now())
     }
   }, [active, pendingBreak, settings.autoStartFocus, startFocus])
@@ -156,9 +171,7 @@ function App() {
       <ConfirmDialog
         open={showConfirm}
         title={
-          confirmMode === 'strictPause'
-            ? '¿Pausar con pausa estricta?'
-            : '¿Abandonar la sesión?'
+          confirmMode === 'strictPause' ? '¿Pausar con pausa estricta?' : '¿Abandonar la sesión?'
         }
         message={
           confirmMode === 'strictPause'

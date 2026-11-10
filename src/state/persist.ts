@@ -1,14 +1,28 @@
 import { createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
 import { reportStorageIssue, useStorageStatus, type StorageIssue } from './storageStatus'
-import type { ActiveSession, Cell, FocusRecord, PersistedV2, PomodoroSettings, Tree, TreeStage } from './types'
+import type {
+  ActiveSession,
+  Cell,
+  FocusRecord,
+  PersistedV2,
+  PomodoroSettings,
+  Tree,
+  TreeStage,
+} from './types'
 import { DEFAULT_POMODORO_SETTINGS } from './types'
 
 export const STORAGE_KEY = 'focus-forest'
 export const PERSIST_VERSION = 2
 
 export function emptyState(): PersistedV2 {
-  return { version: 2, trees: [], sessions: [], active: null, settings: { ...DEFAULT_POMODORO_SETTINGS } }
+  return {
+    version: 2,
+    trees: [],
+    sessions: [],
+    active: null,
+    settings: { ...DEFAULT_POMODORO_SETTINGS },
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -30,7 +44,15 @@ function isCell(value: unknown): value is Cell {
 }
 
 function isStage(value: unknown): value is TreeStage {
-  return value === 1 || value === 2 || value === 3 || value === 4
+  return (
+    value === 1 ||
+    value === 2 ||
+    value === 3 ||
+    value === 4 ||
+    value === 5 ||
+    value === 6 ||
+    value === 7
+  )
 }
 
 function isTree(value: unknown): value is Tree {
