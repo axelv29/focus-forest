@@ -6,6 +6,7 @@ function treeAt(id: string, cell: Cell, state: TreeState, createdAt: number): Tr
   return {
     id,
     sessionId: `session-${id}`,
+    forestId: 'forest-test',
     cell,
     stage: 4,
     state,

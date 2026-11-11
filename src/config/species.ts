@@ -22,8 +22,9 @@ export interface SpeciesConfig {
  *
  * Las etapas se reparten en porcentajes de la duración, así que la misma
  * especie sirve para cualquier pomodoro. El abedul tiene cinco etapas dentro
- * de los 45 minutos; el pino conserva sus cuatro etapas de 25; y el roble
- * tiene siete etapas dentro de los 60.
+ * de los 45 minutos; el pino conserva sus cuatro etapas de 25; el roble tiene
+ * siete etapas dentro de los 60; y el ceibo tiene siete etapas dentro de los
+ * 90.
  */
 export const TREE_SPECIES: Record<TreeSpecies, SpeciesConfig> = {
   abedul: {
@@ -66,10 +67,30 @@ export const TREE_SPECIES: Record<TreeSpecies, SpeciesConfig> = {
       { stage: 7, percent: 100, label: 'Adulto' },
     ],
   },
+  ceibo: {
+    id: 'ceibo',
+    name: 'Ceibo',
+    minutes: 90,
+    scale: 1,
+    stages: [
+      { stage: 1, percent: 0, label: 'Brote' },
+      { stage: 2, percent: 16, label: 'Plantín' },
+      { stage: 3, percent: 33, label: 'Joven' },
+      { stage: 4, percent: 50, label: 'Maduro' },
+      { stage: 5, percent: 66, label: 'Grande' },
+      { stage: 6, percent: 83, label: 'Muy Grande' },
+      { stage: 7, percent: 100, label: 'Adulto' },
+    ],
+  },
 }
 
 /** Bloques ordenados de menor a mayor duración. */
-const SPECIES_BLOCKS: readonly SpeciesConfig[] = [TREE_SPECIES.pino, TREE_SPECIES.abedul, TREE_SPECIES.roble]
+const SPECIES_BLOCKS: readonly SpeciesConfig[] = [
+  TREE_SPECIES.pino,
+  TREE_SPECIES.abedul,
+  TREE_SPECIES.roble,
+  TREE_SPECIES.ceibo,
+]
 
 /**
  * Minutos de pomodoro con una especie disponible (un bloque por especie).
@@ -102,7 +123,7 @@ export function speciesForFocusMin(minutes: number): TreeSpecies {
 
 /** Los árboles guardados sin especie son pinos de la v1. */
 export function speciesFromKind(kind: string | undefined): TreeSpecies {
-  if (kind === 'abedul' || kind === 'roble') {
+  if (kind === 'abedul' || kind === 'roble' || kind === 'ceibo') {
     return kind
   }
   return 'pino'

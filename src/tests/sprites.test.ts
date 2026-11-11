@@ -24,6 +24,13 @@ describe('treeFrameName', () => {
     }
   })
 
+  it('asigna un frame vivo y uno marchito a cada etapa del ceibo', () => {
+    for (const stage of [1, 2, 3, 4, 5, 6, 7] as TreeStage[]) {
+      expect(treeFrameName('ceibo', stage, 'mature')).toBe(`ceibo.${stage}.mature`)
+      expect(treeFrameName('ceibo', stage, 'withered')).toBe(`ceibo.${stage}.withered`)
+    }
+  })
+
   it('usa cinco frames marchitos distintos para el abedul', () => {
     const names = new Set(
       ([1, 2, 3, 4, 5] as TreeStage[]).map((stage) => treeFrameName('abedul', stage, 'withered')),

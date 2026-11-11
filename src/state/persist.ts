@@ -1,27 +1,35 @@
 import { createJSONStorage, type StateStorage } from 'zustand/middleware'
+import { DEFAULT_FOREST_NAME, DEFAULT_FOREST_SIZE, FOREST_SIZES } from '@/config/forest'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
 import { reportStorageIssue, useStorageStatus, type StorageIssue } from './storageStatus'
 import type {
   ActiveSession,
   Cell,
+  DisplaySettings,
   FocusRecord,
-  PersistedV2,
+  Forest,
+  PersistedV3,
   PomodoroSettings,
   Tree,
   TreeStage,
 } from './types'
-import { DEFAULT_POMODORO_SETTINGS } from './types'
+import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from './types'
 
 export const STORAGE_KEY = 'focus-forest'
-export const PERSIST_VERSION = 2
+export const PERSIST_VERSION = 3
 
-export function emptyState(): PersistedV2 {
+export const DEFAULT_FOREST_ID = 'forest-default'
+
+export function emptyState(): PersistedV3 {
   return {
-    version: 2,
+    version: 3,
+    forests: [],
+    activeForestId: null,
     trees: [],
     sessions: [],
     active: null,
     settings: { ...DEFAULT_POMODORO_SETTINGS },
+    display: { ...DEFAULT_DISPLAY_SETTINGS },
   }
 }
 
@@ -55,7 +63,15 @@ function isStage(value: unknown): value is TreeStage {
   )
 }
 
-function isTree(value: unknown): value is Tree {
+function isForestSize(value: unknown): value is Forest['size'] {
+  return typeof value === 'number' && (FOREST_SIZES as readonly number[]).includes(value)
+}
+
+function isDateKey(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
+function isTreeBase(value: unknown): value is Omit<Tree, 'forestId'> {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
@@ -67,7 +83,11 @@ function isTree(value: unknown): value is Tree {
   )
 }
 
-function isFocusRecord(value: unknown): value is FocusRecord {
+function isTree(value: unknown): value is Tree {
+  return isRecord(value) && typeof value.forestId === 'string' && isTreeBase(value)
+}
+
+function isFocusRecordBase(value: unknown): value is Omit<FocusRecord, 'forestId'> {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
@@ -80,7 +100,11 @@ function isFocusRecord(value: unknown): value is FocusRecord {
   )
 }
 
-function isActiveSession(value: unknown): value is ActiveSession {
+function isFocusRecord(value: unknown): value is FocusRecord {
+  return isRecord(value) && typeof value.forestId === 'string' && isFocusRecordBase(value)
+}
+
+function isActiveSessionBase(value: unknown): value is Omit<ActiveSession, 'forestId'> {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
@@ -92,6 +116,40 @@ function isActiveSession(value: unknown): value is ActiveSession {
     (value.pausedAt === null || typeof value.pausedAt === 'number') &&
     typeof value.pausedMs === 'number' &&
     (value.cell === null || isCell(value.cell))
+  )
+}
+
+function isActiveSession(value: unknown): value is ActiveSession {
+  return (
+    isRecord(value) &&
+    (value.forestId === null || typeof value.forestId === 'string') &&
+    isActiveSessionBase(value)
+  )
+}
+
+function isForest(value: unknown): value is Forest {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    value.name.trim().length > 0 &&
+    (value.description === null || typeof value.description === 'string') &&
+    isForestSize(value.size) &&
+    typeof value.createdAt === 'number' &&
+    (value.endsOn === null || isDateKey(value.endsOn)) &&
+    (value.goalHours === null ||
+      (typeof value.goalHours === 'number' &&
+        Number.isFinite(value.goalHours) &&
+        value.goalHours > 0)) &&
+    (value.archivedAt === null || typeof value.archivedAt === 'number')
+  )
+}
+
+function isDisplaySettings(value: unknown): value is DisplaySettings {
+  return (
+    isRecord(value) &&
+    typeof value.showForestName === 'boolean' &&
+    typeof value.showCountdown === 'boolean'
   )
 }
 
@@ -117,16 +175,20 @@ function isPomodoroSettings(value: unknown): value is PomodoroSettings {
 }
 
 /** Valida el estado completo; se usa al leer la versión actual. */
-export function isPersistedState(value: unknown): value is PersistedV2 {
+export function isPersistedState(value: unknown): value is PersistedV3 {
   return (
     isRecord(value) &&
     value.version === PERSIST_VERSION &&
+    Array.isArray(value.forests) &&
+    value.forests.every(isForest) &&
+    (value.activeForestId === null || typeof value.activeForestId === 'string') &&
     Array.isArray(value.trees) &&
     value.trees.every(isTree) &&
     Array.isArray(value.sessions) &&
     value.sessions.every(isFocusRecord) &&
     (value.active === null || isActiveSession(value.active)) &&
-    isPomodoroSettings(value.settings)
+    isPomodoroSettings(value.settings) &&
+    isDisplaySettings(value.display)
   )
 }
 
@@ -149,23 +211,131 @@ function parseEnvelope(raw: string): PersistedEnvelope | null {
   }
 }
 
+function rawForestId(value: unknown): string | null {
+  return isRecord(value) && typeof value.forestId === 'string' ? value.forestId : null
+}
+
+function inferCreatedAt(
+  trees: readonly Omit<Tree, 'forestId'>[],
+  sessions: readonly Omit<FocusRecord, 'forestId'>[],
+  active: Omit<ActiveSession, 'forestId'> | null,
+): number {
+  const values = [
+    ...trees.map((tree) => tree.createdAt),
+    ...sessions.map((session) => session.startedAt),
+    ...(active ? [active.startedAt] : []),
+  ]
+
+  return values.length > 0 ? Math.min(...values) : Date.now()
+}
+
 /**
  * Acepta datos de cualquier versión y conserva solo lo que tenga la forma
- * esperada. Una versión futura compatible no se borra; una entrada rota se
- * descarta sin tirar el resto del bosque.
+ * esperada. Los datos anteriores a la v3 se agrupan en un bosque inicial de
+ * 8×8; los árboles huérfanos se recuperan en lugar de perderse.
  */
-export function migrate(persisted: unknown, _version: number): PersistedV2 {
+export function migrate(persisted: unknown, _version: number): PersistedV3 {
   const data = isRecord(persisted) ? persisted : {}
-
-  const trees = Array.isArray(data.trees) ? data.trees.filter(isTree) : []
-  const sessions = Array.isArray(data.sessions) ? data.sessions.filter(isFocusRecord) : []
-  const active = isActiveSession(data.active) ? data.active : null
 
   const settings = isPomodoroSettings(data.settings)
     ? { ...DEFAULT_POMODORO_SETTINGS, ...data.settings }
     : { ...DEFAULT_POMODORO_SETTINGS }
+  const display = isDisplaySettings(data.display)
+    ? { ...DEFAULT_DISPLAY_SETTINGS, ...data.display }
+    : { ...DEFAULT_DISPLAY_SETTINGS }
 
-  return { version: 2, trees, sessions, active, settings }
+  const forests: Forest[] = Array.isArray(data.forests)
+    ? data.forests.filter(isForest).map((forest) => ({ ...forest }))
+    : []
+
+  const rawTrees = Array.isArray(data.trees) ? data.trees : []
+  const legacyTrees = rawTrees.flatMap((value) => {
+    if (!isTreeBase(value)) {
+      return []
+    }
+
+    return [{ ...value, forestId: rawForestId(value) }]
+  })
+  const legacySessions = (Array.isArray(data.sessions) ? data.sessions : []).flatMap((value) => {
+    if (!isFocusRecordBase(value)) {
+      return []
+    }
+
+    return [{ ...value, forestId: rawForestId(value) }]
+  })
+  const activeRaw = isActiveSessionBase(data.active) ? data.active : null
+  const legacyActive = activeRaw ? { ...activeRaw, forestId: rawForestId(activeRaw) } : null
+
+  const hasData =
+    legacyTrees.length > 0 || legacySessions.length > 0 || legacyActive?.kind === 'focus'
+
+  if (forests.length === 0 && hasData) {
+    forests.push({
+      id: DEFAULT_FOREST_ID,
+      name: DEFAULT_FOREST_NAME,
+      description: null,
+      size: DEFAULT_FOREST_SIZE,
+      createdAt: inferCreatedAt(legacyTrees, legacySessions, legacyActive),
+      endsOn: null,
+      goalHours: null,
+      archivedAt: null,
+    })
+  }
+
+  const known = new Set(forests.map((forest) => forest.id))
+  let fallbackId =
+    forests.find((forest) => forest.archivedAt === null)?.id ?? forests[0]?.id ?? null
+
+  if (!fallbackId && hasData) {
+    const recovered: Forest = {
+      id: 'forest-recovered',
+      name: DEFAULT_FOREST_NAME,
+      description: null,
+      size: DEFAULT_FOREST_SIZE,
+      createdAt: inferCreatedAt(legacyTrees, legacySessions, legacyActive),
+      endsOn: null,
+      goalHours: null,
+      archivedAt: null,
+    }
+    forests.push(recovered)
+    known.add(recovered.id)
+    fallbackId = recovered.id
+  }
+
+  const resolveForestId = (value: string | null): string | null =>
+    value !== null && known.has(value) ? value : fallbackId
+
+  const trees: Tree[] = legacyTrees.flatMap((tree) => {
+    const forestId = resolveForestId(tree.forestId)
+    return forestId ? [{ ...tree, forestId }] : []
+  })
+  const sessions: FocusRecord[] = legacySessions.flatMap((session) => {
+    const forestId = resolveForestId(session.forestId)
+    return forestId ? [{ ...session, forestId }] : []
+  })
+  const active: ActiveSession | null = legacyActive
+    ? {
+        ...legacyActive,
+        forestId: legacyActive.kind === 'focus' ? resolveForestId(legacyActive.forestId) : null,
+      }
+    : null
+
+  const savedActiveForestId =
+    typeof data.activeForestId === 'string' && known.has(data.activeForestId)
+      ? data.activeForestId
+      : null
+  const activeForestId = active?.forestId ?? savedActiveForestId ?? fallbackId ?? null
+
+  return {
+    version: 3,
+    forests,
+    activeForestId,
+    trees,
+    sessions,
+    active,
+    settings,
+    display,
+  }
 }
 
 type GetStorage = () => Storage | null
@@ -311,4 +481,4 @@ export function createSafeStorage(
 }
 
 export const safeStorage = createSafeStorage()
-export const persistStorage = createJSONStorage<PersistedV2>(() => safeStorage)
+export const persistStorage = createJSONStorage<PersistedV3>(() => safeStorage)

@@ -11,7 +11,7 @@ Una app web de escritorio donde una persona completa pomodoros y ve crecer un bo
 | Entra | No entra |
 | --- | --- |
 | Bosques personalizados: varios bosques por usuario, cada uno con el fin que quiera (p. ej. un bosque pequeño de 4×4 para estudio de un mes, un bosque grande para un semestre, o uno que solo trate una materia). | Cuentas, Supabase, sincronización. |
-| Bosques de tamaño variable: fijos desde 3×3 o 4×4 hasta 8×8. | Tienda, monedas, economía. |
+| Bosques de tamaño variable: fijos desde 4×4 hasta 8×8. | Tienda, monedas, economía. |
 | Nuevos tipos de árboles / sprites, con versiones extra de maduración y seteado fácil para agregar futuros sprites y tipos de árboles sin tocar la lógica de crecimiento. | Ajustes de usuario, modo oscuro, PWA, álbum. |
 | Más tiempo en el pomodoro, ligado a los nuevos árboles; decisión tomada: especie según la duración elegida (duración → especie), etapas proporcionales a la duración, una sesión = un árbol. La escalera concreta de especies es una sugerencia, no algo definitivo (ver §5 y §8). | Meta diaria fija o configurable. |
 | Menú nuevo para elegir el tiempo y los ajustes del pomodoro: tiempo de estudio y tiempo de descanso, además descanso largo tras 4 sesiones de pomodoro, que suene una pequeña alarma con 3 tonos predefinidos que puedan cambiarse y que llegue una notificación del navegador cuando sonó; todo esto modificable en la nueva ventana de ajustes que irá al costado de las ya existentes estadísticas y bosque. | Guardado en servidor. |
@@ -40,15 +40,27 @@ Además, de lo ya conocido y no absorbido en el alcance nuevo: guardado local co
 ## 4. Modelo de datos
 
 ```ts
-type TreeKind = string; // nuevos tipos: pino, abeto, roble, etc.
+type TreeKind = string; // nuevos tipos: pino, abeto, roble, ceibo, etc.
 
 interface Cell {
   col: number;
   row: number;
 }
 
+interface Forest {
+  id: string;
+  name: string;
+  description: string | null;
+  size: 4 | 5 | 6 | 7 | 8;
+  createdAt: number; // epoch ms
+  endsOn: string | null; // día local YYYY-MM-DD
+  goalHours: number | null;
+  archivedAt: number | null;
+}
+
 interface Tree {
   id: string;
+  forestId: string;
   sessionId: string;
   cell: Cell;
   kind: TreeKind;
@@ -67,6 +79,7 @@ interface Session {
 
 interface ActiveSession {
   id: string;
+  forestId: string | null; // null en descanso
   kind: 'focus' | 'break';
   startedAt: number;
   endsAt: number;
@@ -80,6 +93,7 @@ interface ActiveSession {
 
 interface FocusRecord {
   id: string;
+  forestId: string;
   sessionId: string;
   startedAt: number;
   endedAt: number;
@@ -88,9 +102,15 @@ interface FocusRecord {
   treeId: string;
 }
 
-interface PersistedV2 {
-  version: 2;
-  // ... árboles, sesiones, historial, ajustes del pomodoro
+interface PersistedV3 {
+  version: 3;
+  forests: Forest[];
+  activeForestId: string | null;
+  trees: Tree[];
+  sessions: FocusRecord[];
+  active: ActiveSession | null;
+  settings: PomodoroSettings;
+  display: { showForestName: boolean; showCountdown: boolean };
 }
 ```
 
@@ -99,11 +119,11 @@ interface PersistedV2 {
 - **Tiempo:** todo en epoch ms. El restante se calcula con `endsAt - now`; nunca se resta un contador. Los descansos y el descanso largo salen de los ajustes del pomodoro.
 - **Día local:** "hoy" se calcula con los getters locales de `Date`, nunca con `toISOString()`.
 - **Etapas:** `0 → 1`, `5 → 2`, `15 → 3`, `25 → 4` para el pino; los nuevos tipos pueden tener versiones extra de maduración (más etapas o tiempos distintos por tipo). Una sesión completada termina en la etapa correspondiente de su tipo.
-- **Tiempo por árbol (decisión tomada, 2026-11-08):** duración → especie; las etapas de crecimiento son proporcionales a la duración de la sesión (p. ej. 0/20/60/100 %). La especie de la sesión completada termina en la etapa correspondiente de su tipo. Una sesión planta un árbol. Tiempos personalizados: la especie del bloque más cercano por debajo, o pino como base. La escalera duración → especie propuesta es una sugerencia, no definitiva: 15 min → Abedul, 25 min → Pino, 45 min → Abeto, 60 min → Roble, 90 min → Secuoya, 120 min → Cerezo (acento especial de la paleta, reservado a rarezas). Puede haber después varias especies con el mismo tiempo, u otros elementos (flores, cosméticos), sin tocar la lógica. Registro de especies en `config` (id, nombre, sprites, umbrales por especie opcionales, minutos del bloque).
+- **Tiempo por árbol (decisión tomada, 2026-11-08):** duración → especie; las etapas de crecimiento son proporcionales a la duración de la sesión (p. ej. 0/20/60/100 %). La especie de la sesión completada termina en la etapa correspondiente de su tipo. Una sesión planta un árbol. Tiempos personalizados: la especie del bloque más cercano por debajo, o pino como base. La escalera duración → especie propuesta es una sugerencia, no definitiva: 15 min → Abedul, 25 min → Pino, 45 min → Abeto, 60 min → Roble, 90 min → Ceibo, 120 min → Cerezo (acento especial de la paleta, reservado a rarezas). Puede haber después varias especies con el mismo tiempo, u otros elementos (flores, cosméticos), sin tocar la lógica. Registro de especies en `config` (id, nombre, sprites, umbrales por especie opcionales, minutos del bloque). El ceibo ya tiene su atlas (vivo y marchito, 7 etapas) y ocupa el bloque de 90 min.
 - **Descanso largo:** tras N sesiones de pomodoro completadas (p. ej. 4), se ofrece o inicia un descanso largo con su alarma.
 - **Alarma:** 3 tonos predefinidos editables + notificación del navegador al sonar.
 - **Pausa estricta:** no se puede pausar; si se pausa, se trata como abandono. Con tolerancia activable, el árbol solo marchita pasado el tiempo de tolerancia; ese tiempo es el mismo para toda la sesión.
-- **Persistencia:** clave `focus-forest`, versión 2, migración preparada. Datos corruptos: copia en `focus-forest.broken` y reinicio, con aviso. Versión más nueva: aviso y escrituras bloqueadas, sin borrar ni modificar el guardado. Almacenamiento bloqueado o lleno: aviso y estado solo en memoria.
+- **Persistencia:** clave `focus-forest`, versión 3, migración preparada. Los datos viejos se adjuntan a un bosque “Mi bosque” de 8×8; sin datos viejos no se crea un bosque vacío. Datos corruptos: copia en `focus-forest.broken` y reinicio, con aviso. Versión más nueva: aviso y escrituras bloqueadas, sin borrar ni modificar el guardado. Almacenamiento bloqueado o lleno: aviso y estado solo en memoria.
 - **Estadísticas:** solo enfoques completados. "Hoy" usa el día local. Los abandonos y los descansos no suman.
 
 ## 6. Criterios de aceptación
@@ -138,3 +158,9 @@ interface PersistedV2 {
 - Deploy de Vercel funcionando.
 
 Pendiente de decidir antes del cierre: la escalera definitiva de especies (la propuesta en §5 es una sugerencia) y la tolerancia exacta de la pausa estricta. Decidido: duración → especie, etapas proporcionales, una sesión = un árbol.
+
+## 9. Estado de implementación (2026-11-11)
+
+Hecho: entidad `Forest` y `PersistedV3` con migración; creación de bosque con nombre, descripción, tamaño 4×4–8×8, fecha opcional con calendario propio y contador, meta de horas y vista previa pixel art; bienvenida con pradera 8×8 y CTA; cabecera con nombre y contador; estadísticas y sesión filtradas por bosque activo.
+
+Pendiente de esta serie: pantalla de cambio de bosque, edición/archivado/eliminación, toggles de nombre/contador en Ajustes, historial por bosque y vista por período.

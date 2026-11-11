@@ -18,6 +18,8 @@ export type SheetName =
   | 'abedulMuerto'
   | 'roble'
   | 'robleMuerto'
+  | 'ceibo'
+  | 'ceiboMuerto'
 
 export interface Atlas {
   images: Partial<Record<SheetName, HTMLImageElement>>
@@ -106,6 +108,20 @@ const SHEETS: Record<SheetName, SheetConfig> = {
     image: '/sprites/roble_muerto_atlas.png?v=1',
     meta: '/sprites/roble_muerto_atlas.json?v=1',
     prefix: /^roble_muerto_([1-7])_/,
+  },
+  ceibo: {
+    species: 'ceibo',
+    state: 'mature',
+    image: '/sprites/ceibo_atlas.png?v=1',
+    meta: '/sprites/ceibo_atlas.json?v=1',
+    prefix: /^ceibo_([1-7])_/,
+  },
+  ceiboMuerto: {
+    species: 'ceibo',
+    state: 'withered',
+    image: '/sprites/ceibo_muerto_atlas.png?v=1',
+    meta: '/sprites/ceibo_muerto_atlas.json?v=1',
+    prefix: /^ceibo_muerto_([1-7])_/,
   },
 }
 

@@ -1,9 +1,8 @@
-import { FOREST_NAME } from '@/config/forest'
 import { speciesConfig, speciesForFocusMin, stageMinuteMark } from '@/config/species'
 import { stageForElapsedMs, stageLabel } from '@/logic/growth'
 import { formatSessionStart, sessionName } from '@/logic/session'
 import { elapsedMs } from '@/logic/timer'
-import { selectStats } from '@/state/selectors'
+import { selectActiveForest, selectStats } from '@/state/selectors'
 import { useStore } from '@/state/store'
 import { TreePreview } from './TreePreview'
 
@@ -11,7 +10,10 @@ export function SessionCard({ now }: { now: number }) {
   const active = useStore((state) => state.active)
   const sessions = useStore((state) => state.sessions)
   const trees = useStore((state) => state.trees)
-  const stats = selectStats(sessions, trees, now)
+  const forests = useStore((state) => state.forests)
+  const forestId = active?.kind === 'focus' ? active.forestId : null
+  const activeForest = selectActiveForest(forests, forestId)
+  const stats = selectStats(sessions, trees, now, activeForest?.id)
 
   if (active?.kind !== 'focus') {
     return null
@@ -64,7 +66,7 @@ export function SessionCard({ now }: { now: number }) {
         </div>
         <div className="session-data__row">
           <dt className="session-data__label">Bosque</dt>
-          <dd className="session-data__value">{FOREST_NAME}</dd>
+          <dd className="session-data__value">{activeForest?.name ?? 'Sin bosque'}</dd>
         </div>
       </dl>
     </section>

@@ -1,9 +1,16 @@
 import { BREAK_MINUTES, FOCUS_MINUTES } from '@/config/timer'
 import type { ActiveSession, Cell } from '@/state/types'
 
-export function createFocusSession(id: string, now: number, cell: Cell, focusMin: number = FOCUS_MINUTES): ActiveSession {
+export function createFocusSession(
+  id: string,
+  now: number,
+  cell: Cell,
+  focusMin: number = FOCUS_MINUTES,
+  forestId: string | null = null,
+): ActiveSession {
   return {
     id,
+    forestId,
     kind: 'focus',
     startedAt: now,
     endsAt: now + focusMin * 60_000,
@@ -14,9 +21,14 @@ export function createFocusSession(id: string, now: number, cell: Cell, focusMin
   }
 }
 
-export function createBreakSession(id: string, now: number, breakMin: number = BREAK_MINUTES): ActiveSession {
+export function createBreakSession(
+  id: string,
+  now: number,
+  breakMin: number = BREAK_MINUTES,
+): ActiveSession {
   return {
     id,
+    forestId: null,
     kind: 'break',
     startedAt: now,
     endsAt: now + breakMin * 60_000,

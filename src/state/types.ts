@@ -1,5 +1,7 @@
+import type { ForestSize } from '@/config/forest'
+
 export type TreeStage = 1 | 2 | 3 | 4 | 5 | 6 | 7
-export type TreeSpecies = 'pino' | 'abedul' | 'roble'
+export type TreeSpecies = 'pino' | 'abedul' | 'roble' | 'ceibo'
 export type TreeState = 'mature' | 'withered'
 export type SessionKind = 'focus' | 'break'
 export type FocusStatus = 'completed' | 'abandoned'
@@ -11,8 +13,32 @@ export interface Cell {
   row: number
 }
 
+/** Un bosque es un objetivo con vida propia: un semestre, una materia, un examen. */
+export interface Forest {
+  id: string
+  name: string
+  description: string | null
+  size: ForestSize
+  createdAt: number
+  /** Fecha local YYYY-MM-DD; null si el bosque no tiene plazo. */
+  endsOn: string | null
+  /** Objetivo opcional en horas de enfoque. */
+  goalHours: number | null
+  /** Se completará en una próxima versión; null mientras esté activo. */
+  archivedAt: number | null
+}
+
+export interface NewForestInput {
+  name: string
+  description: string | null
+  size: ForestSize
+  endsOn: string | null
+  goalHours: number | null
+}
+
 export interface Tree {
   id: string
+  forestId: string
   sessionId: string
   cell: Cell
   kind?: TreeKind
@@ -23,6 +49,8 @@ export interface Tree {
 
 export interface ActiveSession {
   id: string
+  /** Solo los enfoques pertenecen a un bosque; los descansos no. */
+  forestId: string | null
   kind: SessionKind
   startedAt: number
   endsAt: number
@@ -41,6 +69,7 @@ export interface ActiveSession {
 
 export interface FocusRecord {
   id: string
+  forestId: string
   startedAt: number
   endedAt: number
   durationMin: number
@@ -82,17 +111,42 @@ export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
   autoStartFocus: false,
 }
 
+export interface DisplaySettings {
+  showForestName: boolean
+  showCountdown: boolean
+}
+
+export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
+  showForestName: true,
+  showCountdown: true,
+}
+
+export type LegacyTree = Omit<Tree, 'forestId'>
+export type LegacyFocusRecord = Omit<FocusRecord, 'forestId'>
+export type LegacyActiveSession = Omit<ActiveSession, 'forestId'>
+
 export interface PersistedV1 {
   version: 1
-  trees: Tree[]
-  sessions: FocusRecord[]
-  active: ActiveSession | null
+  trees: LegacyTree[]
+  sessions: LegacyFocusRecord[]
+  active: LegacyActiveSession | null
 }
 
 export interface PersistedV2 {
   version: 2
+  trees: LegacyTree[]
+  sessions: LegacyFocusRecord[]
+  active: LegacyActiveSession | null
+  settings: PomodoroSettings
+}
+
+export interface PersistedV3 {
+  version: 3
+  forests: Forest[]
+  activeForestId: string | null
   trees: Tree[]
   sessions: FocusRecord[]
   active: ActiveSession | null
   settings: PomodoroSettings
+  display: DisplaySettings
 }

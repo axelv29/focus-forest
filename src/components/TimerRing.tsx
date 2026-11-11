@@ -28,7 +28,11 @@ export function TimerRing({
   const angle = clamped * 360
 
   const variantClass =
-    variant === 'shortBreak' ? 'timer-ring--short-break' : variant === 'longBreak' ? 'timer-ring--long-break' : ''
+    variant === 'shortBreak'
+      ? 'timer-ring--short-break'
+      : variant === 'longBreak'
+        ? 'timer-ring--long-break'
+        : ''
 
   return (
     <div

@@ -14,6 +14,7 @@ export function summarizeStats(
   sessions: readonly FocusRecord[],
   trees: readonly Tree[],
   now = Date.now(),
+  forestId?: string,
 ): StatsSummary {
   const todayKey = localDayKey(now)
   const summary: StatsSummary = {
@@ -26,7 +27,7 @@ export function summarizeStats(
   }
 
   for (const session of sessions) {
-    if (session.status !== 'completed') {
+    if (session.status !== 'completed' || (forestId && session.forestId !== forestId)) {
       continue
     }
 
@@ -40,6 +41,10 @@ export function summarizeStats(
   }
 
   for (const tree of trees) {
+    if (forestId && tree.forestId !== forestId) {
+      continue
+    }
+
     if (tree.state === 'mature') {
       summary.matureTrees += 1
     } else {

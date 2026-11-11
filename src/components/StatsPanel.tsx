@@ -1,7 +1,7 @@
 import { ViewSwitch } from '@/components/ViewSwitch'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
 import type { View } from '@/config/views'
-import { selectStats } from '@/state/selectors'
+import { selectActiveForest, selectStats } from '@/state/selectors'
 import { useStore } from '@/state/store'
 
 interface StatsPanelProps {
@@ -13,8 +13,12 @@ interface StatsPanelProps {
 export function StatsPanel({ now, view, onChangeView }: StatsPanelProps) {
   const sessions = useStore((state) => state.sessions)
   const trees = useStore((state) => state.trees)
-  const stats = selectStats(sessions, trees, now)
-  const totalCells = GRID_COLS * GRID_ROWS
+  const forests = useStore((state) => state.forests)
+  const activeForestId = useStore((state) => state.activeForestId)
+  const activeForest = selectActiveForest(forests, activeForestId)
+  const stats = selectStats(sessions, trees, now, activeForest?.id)
+  const globalStats = selectStats(sessions, trees, now)
+  const totalCells = activeForest ? activeForest.size * activeForest.size : GRID_COLS * GRID_ROWS
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 pb-16" aria-label="Estadísticas">
@@ -24,6 +28,7 @@ export function StatsPanel({ now, view, onChangeView }: StatsPanelProps) {
 
       <p className="eyebrow">Estadísticas</p>
       <h2 className="type-title-lg mt-2">Tu bosque en números</h2>
+      {activeForest && <p className="type-caption type-muted mt-1">{activeForest.name}</p>}
 
       <div className="stat-grid mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
@@ -55,6 +60,12 @@ export function StatsPanel({ now, view, onChangeView }: StatsPanelProps) {
       <p className="type-body type-muted mt-6">
         Solo los pomodoros completados suman minutos. Los descansos no plantan árboles.
       </p>
+      {forests.length > 1 && (
+        <p className="type-caption type-muted mt-1">
+          En todos los bosques: {globalStats.totalPomodoros} pomodoros y {globalStats.totalMinutes}{' '}
+          minutos de enfoque.
+        </p>
+      )}
     </section>
   )
 }

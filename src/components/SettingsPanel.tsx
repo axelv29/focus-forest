@@ -116,7 +116,7 @@ export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps
             <span className="type-body">Pomodoro</span>
             <InfoTip
               label="Más información sobre el pomodoro"
-              text="Tiempo en minutos. A los 25 minutos crece un pino; a los 45, un abedul; desde los 60, un roble. Los demás tiempos llegan con nuevas especies."
+              text="Tiempo en minutos. A los 25 minutos crece un pino; a los 45, un abedul; desde los 60, un roble; a los 90, un ceibo. Los demás tiempos llegan con nuevas especies."
             />
           </span>
           <Select
@@ -170,7 +170,7 @@ export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps
           />
         </div>
         <p className="type-body type-muted">
-          Los tiempos de 15, 90 y 120 minutos llegan cuando haya árboles para esos tiempos.
+          Los tiempos de 15 y 120 minutos llegan cuando haya árboles para esos tiempos.
         </p>
       </section>
 

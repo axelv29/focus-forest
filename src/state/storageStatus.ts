@@ -1,9 +1,7 @@
 import { create } from 'zustand'
 
 export type StorageIssue =
-  | { kind: 'corrupt' }
-  | { kind: 'future-version'; version: number }
-  | { kind: 'unavailable' }
+  { kind: 'corrupt' } | { kind: 'future-version'; version: number } | { kind: 'unavailable' }
 
 interface StorageStatusState {
   issue: StorageIssue | null

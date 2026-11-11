@@ -1,5 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  FOREST_DESCRIPTION_MAX_LENGTH,
+  FOREST_GOAL_HOURS_MAX,
+  FOREST_NAME_MAX_LENGTH,
+} from '@/config/forest'
 import { finalStage, speciesForFocusMin } from '@/config/species'
 import { DEFAULT_GARDEN_SIZE } from '@/config/grid'
 import { stageForElapsedMs } from '@/logic/growth'
@@ -12,8 +17,17 @@ import {
   pauseSession,
   resumeSession,
 } from '@/logic/timer'
-import type { ActiveSession, FocusRecord, PersistedV2, PomodoroSettings, Tree } from './types'
-import { DEFAULT_POMODORO_SETTINGS } from './types'
+import type {
+  ActiveSession,
+  DisplaySettings,
+  FocusRecord,
+  Forest,
+  NewForestInput,
+  PersistedV3,
+  PomodoroSettings,
+  Tree,
+} from './types'
+import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from './types'
 import { migrate, PERSIST_VERSION, persistStorage, STORAGE_KEY } from './persist'
 
 export type NoticeKind = 'info' | 'success' | 'warning'
@@ -23,11 +37,18 @@ export interface Notice {
   text: string
 }
 
-interface StoreState extends PersistedV2 {
+interface StoreState extends PersistedV3 {
   pendingBreak: boolean
   notice: Notice | null
   /** Dev: tamaño del bosque en celdas por lado para el preview del panel. */
   devGardenSize: number
+  createForest: (input: NewForestInput, now: number) => string | null
+  selectForest: (id: string) => void
+  updateForest: (id: string, input: NewForestInput) => void
+  archiveForest: (id: string, now: number) => void
+  unarchiveForest: (id: string) => void
+  deleteForest: (id: string) => void
+  updateDisplay: (patch: Partial<DisplaySettings>) => void
   startFocus: (now: number) => void
   startBreak: (now: number) => void
   pause: (now: number) => void
@@ -52,13 +73,13 @@ export const useStore = create<StoreState>()(
   persist(
     (set, get) => {
       const completeFocus = (active: ActiveSession, now: number) => {
-        if (!active.cell) {
+        if (!active.cell || !active.forestId) {
           set({
             active: null,
             pendingBreak: false,
             notice: {
               kind: 'warning',
-              text: 'La sesión no tenía una celda. Se cerró sin plantar.',
+              text: 'La sesión no tenía una celda o un bosque. Se cerró sin plantar.',
             },
           })
           return
@@ -70,6 +91,7 @@ export const useStore = create<StoreState>()(
         const species = speciesForFocusMin(active.durationMin)
         const tree: Tree = {
           id: makeId(),
+          forestId: active.forestId,
           sessionId: active.id,
           cell: active.cell,
           kind: species,
@@ -79,6 +101,7 @@ export const useStore = create<StoreState>()(
         }
         const record: FocusRecord = {
           id: active.id,
+          forestId: active.forestId,
           startedAt: active.startedAt,
           endedAt,
           durationMin: active.durationMin,
@@ -99,21 +122,175 @@ export const useStore = create<StoreState>()(
       }
 
       return {
-        version: 2,
+        version: 3,
+        forests: [],
+        activeForestId: null,
         trees: [],
         sessions: [],
         active: null,
         settings: { ...DEFAULT_POMODORO_SETTINGS },
+        display: { ...DEFAULT_DISPLAY_SETTINGS },
         pendingBreak: false,
         notice: null,
         devGardenSize: DEFAULT_GARDEN_SIZE,
+
+        createForest: (input, now) => {
+          const name = input.name.trim().slice(0, FOREST_NAME_MAX_LENGTH)
+          if (!name) {
+            return null
+          }
+
+          const description =
+            input.description?.trim().slice(0, FOREST_DESCRIPTION_MAX_LENGTH) || null
+          const goalHours =
+            typeof input.goalHours === 'number' && input.goalHours > 0
+              ? Math.min(Math.round(input.goalHours), FOREST_GOAL_HOURS_MAX)
+              : null
+          const forest: Forest = {
+            id: makeId(),
+            name,
+            description,
+            size: input.size,
+            createdAt: now,
+            endsOn: input.endsOn,
+            goalHours,
+            archivedAt: null,
+          }
+
+          set((state) => ({
+            forests: [...state.forests, forest],
+            // Durante una sesión no se cambia de bosque.
+            activeForestId: state.active ? state.activeForestId : forest.id,
+            notice: {
+              kind: 'success',
+              text: 'Bosque creado. Ya podés empezar a plantar.',
+            },
+          }))
+
+          return forest.id
+        },
+
+        updateForest: (id, input) => {
+          const name = input.name.trim().slice(0, FOREST_NAME_MAX_LENGTH)
+          if (!name) {
+            return
+          }
+
+          const description =
+            input.description?.trim().slice(0, FOREST_DESCRIPTION_MAX_LENGTH) || null
+          const goalHours =
+            typeof input.goalHours === 'number' && input.goalHours > 0
+              ? Math.min(Math.round(input.goalHours), FOREST_GOAL_HOURS_MAX)
+              : null
+
+          set((state) => ({
+            forests: state.forests.map((forest) =>
+              forest.id === id
+                ? {
+                    ...forest,
+                    name,
+                    description,
+                    // El tamaño se define al crear el bosque y no se puede cambiar.
+                    size: forest.size,
+                    endsOn: input.endsOn,
+                    goalHours,
+                  }
+                : forest,
+            ),
+          }))
+        },
+
+        archiveForest: (id, now) => {
+          set((state) => {
+            const forests = state.forests.map((forest) =>
+              forest.id === id ? { ...forest, archivedAt: now } : forest,
+            )
+            const fallback =
+              forests.find((forest) => forest.id !== id && forest.archivedAt === null)?.id ?? null
+
+            return {
+              forests,
+              // Si el bosque archivado era el activo, pasamos al primero disponible.
+              activeForestId: state.activeForestId === id ? fallback : state.activeForestId,
+            }
+          })
+        },
+
+        unarchiveForest: (id) => {
+          set((state) => {
+            const forests = state.forests.map((forest) =>
+              forest.id === id ? { ...forest, archivedAt: null } : forest,
+            )
+            const hasActive =
+              state.activeForestId !== null &&
+              forests.some(
+                (forest) => forest.id === state.activeForestId && forest.archivedAt === null,
+              )
+
+            return {
+              forests,
+              activeForestId: hasActive ? state.activeForestId : id,
+            }
+          })
+        },
+
+        deleteForest: (id) => {
+          set((state) => {
+            const forests = state.forests.filter((forest) => forest.id !== id)
+            const fallback =
+              forests.find((forest) => forest.archivedAt === null)?.id ?? forests[0]?.id ?? null
+
+            return {
+              forests,
+              trees: state.trees.filter((tree) => tree.forestId !== id),
+              sessions: state.sessions.filter((session) => session.forestId !== id),
+              active: state.active && state.active.forestId === id ? null : state.active,
+              activeForestId: state.activeForestId === id ? fallback : state.activeForestId,
+            }
+          })
+        },
+
+        selectForest: (id) => {
+          if (get().active) {
+            return
+          }
+          if (!get().forests.some((forest) => forest.id === id)) {
+            return
+          }
+
+          set({ activeForestId: id, notice: null })
+        },
+
+        updateDisplay: (patch) => set((state) => ({ display: { ...state.display, ...patch } })),
 
         startFocus: (now) => {
           if (get().active) {
             return
           }
 
-          const placement = choosePlacement(get().trees)
+          const state = get()
+          const forest = state.forests.find((item) => item.id === state.activeForestId)
+          if (!forest) {
+            set({
+              notice: {
+                kind: 'info',
+                text: 'Primero creá un bosque para empezar a plantar.',
+              },
+            })
+            return
+          }
+          if (forest.archivedAt !== null) {
+            set({
+              notice: {
+                kind: 'warning',
+                text: 'Ese bosque está archivado. Elegí otro para empezar.',
+              },
+            })
+            return
+          }
+
+          const forestTrees = state.trees.filter((tree) => tree.forestId === forest.id)
+          const placement = choosePlacement(forestTrees, Math.random, forest.size, forest.size)
           if (!placement) {
             set({
               notice: {
@@ -124,21 +301,25 @@ export const useStore = create<StoreState>()(
             return
           }
 
-          const currentTrees = get().trees
-          const currentSessions = get().sessions
           const trees =
             placement.replacedTreeId === null
-              ? currentTrees
-              : currentTrees.filter((tree) => tree.id !== placement.replacedTreeId)
+              ? state.trees
+              : state.trees.filter((tree) => tree.id !== placement.replacedTreeId)
           const sessions =
             placement.replacedTreeId === null
-              ? currentSessions
-              : currentSessions.filter((session) => session.treeId !== placement.replacedTreeId)
-          const session = createFocusSession(makeId(), now, placement.cell, get().settings.focusMin)
+              ? state.sessions
+              : state.sessions.filter((session) => session.treeId !== placement.replacedTreeId)
+          const session = createFocusSession(
+            makeId(),
+            now,
+            placement.cell,
+            state.settings.focusMin,
+            forest.id,
+          )
           const activeSession: ActiveSession = {
             ...session,
-            strictPause: get().settings.strictPause,
-            pauseToleranceMin: get().settings.pauseToleranceMin,
+            strictPause: state.settings.strictPause,
+            pauseToleranceMin: state.settings.pauseToleranceMin,
           }
 
           set({ trees, sessions, active: activeSession, pendingBreak: false, notice: null })
@@ -216,7 +397,7 @@ export const useStore = create<StoreState>()(
             return
           }
 
-          if (!active.cell) {
+          if (!active.cell || !active.forestId) {
             set({ active: null })
             return
           }
@@ -225,6 +406,7 @@ export const useStore = create<StoreState>()(
           const stage = stageForElapsedMs(species, elapsedMs(active, now), active.durationMin)
           const tree: Tree = {
             id: makeId(),
+            forestId: active.forestId,
             sessionId: active.id,
             cell: active.cell,
             kind: species,
@@ -234,6 +416,7 @@ export const useStore = create<StoreState>()(
           }
           const record: FocusRecord = {
             id: active.id,
+            forestId: active.forestId,
             startedAt: active.startedAt,
             endedAt: now,
             durationMin: active.durationMin,
@@ -315,10 +498,13 @@ export const useStore = create<StoreState>()(
       migrate,
       partialize: (state) => ({
         version: state.version,
+        forests: state.forests,
+        activeForestId: state.activeForestId,
         trees: state.trees,
         sessions: state.sessions,
         active: state.active,
         settings: state.settings,
+        display: state.display,
       }),
     },
   ),

@@ -3,8 +3,10 @@ import { BreakPrompt } from '@/components/BreakPrompt'
 import { CompletionToast } from '@/components/CompletionToast'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DevPanel } from '@/components/DevPanel'
+import { ForestCountdown } from '@/components/ForestCountdown'
+import { ForestCreateDialog } from '@/components/ForestCreateDialog'
+import { ForestSwitcher } from '@/components/ForestSwitcher'
 import { GardenCanvas } from '@/components/GardenCanvas'
-
 import { SessionCard } from '@/components/SessionCard'
 import { StatsPanel } from '@/components/StatsPanel'
 import { StorageNotice } from '@/components/StorageNotice'
@@ -17,6 +19,9 @@ import { playTone } from '@/logic/alarm'
 import { sendNotification } from '@/logic/notifications'
 import { useStore } from '@/state/store'
 import { speciesForFocusMin } from '@/config/species'
+import { describeForestCountdown } from '@/logic/forest'
+import { selectActiveForest } from '@/state/selectors'
+import type { Forest, NewForestInput } from '@/state/types'
 
 type ConfirmMode = 'abandon' | 'strictPause'
 
@@ -29,12 +34,25 @@ function App() {
   const now = useCountdown()
   const active = useStore((state) => state.active)
   const trees = useStore((state) => state.trees)
+  const forests = useStore((state) => state.forests)
+  const activeForestId = useStore((state) => state.activeForestId)
+  const display = useStore((state) => state.display)
   const pendingBreak = useStore((state) => state.pendingBreak)
   const startBreak = useStore((state) => state.startBreak)
   const startFocus = useStore((state) => state.startFocus)
   const abandon = useStore((state) => state.abandon)
+  const createForest = useStore((state) => state.createForest)
+  const updateForest = useStore((state) => state.updateForest)
+  const selectForest = useStore((state) => state.selectForest)
   const [view, setView] = useState<View>('garden')
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
+  const [forestDialogOpen, setForestDialogOpen] = useState(false)
+  const [editingForest, setEditingForest] = useState<Forest | null>(null)
+
+  const currentForestId = active?.kind === 'focus' ? active.forestId : activeForestId
+  const activeForest = selectActiveForest(forests, currentForestId)
+  const forestTrees = activeForest ? trees.filter((tree) => tree.forestId === activeForest.id) : []
+  const countdown = activeForest ? describeForestCountdown(activeForest.endsOn, now) : null
 
   const activeSpecies = active?.kind === 'focus' ? speciesForFocusMin(active.durationMin) : null
   const activeStage =
@@ -70,10 +88,43 @@ function App() {
     }
   }, [active])
 
+  const openForestDialog = useCallback(() => setForestDialogOpen(true), [])
+  const closeForestDialog = useCallback(() => {
+    setForestDialogOpen(false)
+    setEditingForest(null)
+  }, [])
+  const openEditForest = useCallback((forest: Forest) => {
+    setEditingForest(forest)
+    setForestDialogOpen(true)
+  }, [])
+  const handleCreateForest = useCallback(
+    (input: NewForestInput, forestId?: string) => {
+      if (forestId) {
+        updateForest(forestId, input)
+        return forestId
+      }
+
+      const created = createForest(input, Date.now())
+      if (created) {
+        setView('garden')
+      }
+      return created
+    },
+    [createForest, updateForest],
+  )
+
+  const handleSelectForest = useCallback(
+    (id: string) => {
+      selectForest(id)
+      setView('garden')
+    },
+    [selectForest],
+  )
+
   const settings = useStore((state) => state.settings)
   const devGardenSize = useStore((state) => state.devGardenSize)
   const prevActiveRef = useRef(active)
-  const withered = trees.filter((tree) => tree.state === 'withered').length
+  const withered = forestTrees.filter((tree) => tree.state === 'withered').length
 
   // Alarma al completar un enfoque (aparece el aviso de descanso).
   useEffect(() => {
@@ -116,32 +167,76 @@ function App() {
     if (
       active === null &&
       !pendingBreak &&
+      activeForest !== null &&
       settings.autoStartFocus &&
       prevActiveRef.current?.kind === 'break'
     ) {
       startFocus(Date.now())
     }
-  }, [active, pendingBreak, settings.autoStartFocus, startFocus])
-  const label = `Pradera con ${trees.length} árboles y ${withered} marchitos.`
+  }, [active, activeForest, pendingBreak, settings.autoStartFocus, startFocus])
+  const label = activeForest
+    ? `Bosque ${activeForest.name}: ${forestTrees.length} árboles y ${withered} marchitos.`
+    : 'Pradera de bienvenida con 8 por 8 celdas.'
   const inSession = active !== null
   const showConfirm = active !== null && active.kind === 'focus' && confirmRequest?.id === active.id
   const confirmMode = confirmRequest?.mode ?? 'abandon'
 
+  const scrollableView = view === 'forests' || (view === 'stats' && !inSession)
+
   return (
-    <div className="min-h-screen overflow-hidden bg-background text-ink">
-      <header className="relative z-30 flex w-full items-center px-4 py-3">
+    <div
+      className={
+        scrollableView
+          ? 'min-h-screen overflow-x-hidden bg-background text-ink'
+          : 'min-h-screen overflow-hidden bg-background text-ink'
+      }
+    >
+      <header className="relative z-30 flex w-full items-center gap-3 px-4 py-3">
         <div className="brand">
           <h1 className="app-title">Focus Forest</h1>
         </div>
+        {activeForest && (display.showForestName || (display.showCountdown && countdown)) && (
+          <div className="forest-header">
+            {display.showForestName && (
+              <span className="forest-header__name" title={activeForest.name}>
+                {activeForest.name}
+              </span>
+            )}
+            {display.showCountdown && countdown && (
+              <ForestCountdown countdown={countdown} />
+            )}
+          </div>
+        )}
       </header>
 
       <StorageNotice />
 
-      <main className="max-[767px]:h-[calc(100vh-3.5rem)] max-[767px]:overflow-x-hidden max-[767px]:overflow-y-auto pb-8 min-[768px]:pb-0">
-        {view === 'garden' || inSession ? (
+      <main
+        className={
+          scrollableView
+            ? 'pb-12'
+            : 'max-[767px]:h-[calc(100vh-3.5rem)] max-[767px]:overflow-x-hidden max-[767px]:overflow-y-auto pb-8 min-[768px]:pb-0'
+        }
+      >
+        {view === 'forests' ? (
+          <ForestSwitcher
+            now={now}
+            view={view}
+            onChangeView={setView}
+            onSelect={handleSelectForest}
+            onCreateForest={openForestDialog}
+            onEditForest={openEditForest}
+          />
+        ) : view === 'garden' || inSession ? (
           <div className="relative w-full">
             <div className="relative mx-auto w-full max-w-[1024px]">
-              <GardenCanvas trees={trees} active={activePreview} label={label} gardenSize={devGardenSize} />
+              <GardenCanvas
+                trees={forestTrees}
+                active={activePreview}
+                label={label}
+                gardenSize={activeForest?.size ?? devGardenSize}
+                hasForest={activeForest !== null}
+              />
             </div>
 
             {active?.kind === 'focus' && (
@@ -150,13 +245,14 @@ function App() {
               </div>
             )}
 
-            <div className="relative z-10 mx-auto mt-4 w-full max-w-md px-4 min-[768px]:absolute min-[768px]:right-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(260px,20vw,420px)] min-[768px]:px-0">
+            <div className="relative z-10 mx-auto mt-4 w-full max-w-md px-4 min-[768px]:absolute min-[768px]:right-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(350px,20vw,420px)] min-[768px]:px-0">
               <TimerPanel
                 now={now}
                 view={view}
                 onChangeView={setView}
                 onAbandonRequest={requestAbandon}
                 onStrictPauseRequest={requestStrictPause}
+                onCreateForest={openForestDialog}
               />
             </div>
           </div>
@@ -182,6 +278,12 @@ function App() {
         confirmLabel={confirmMode === 'strictPause' ? 'Pausar y abandonar' : 'Abandonar'}
         onConfirm={confirmAbandon}
         onCancel={closeConfirm}
+      />
+      <ForestCreateDialog
+        open={forestDialogOpen}
+        onClose={closeForestDialog}
+        onCreate={handleCreateForest}
+        forest={editingForest}
       />
     </div>
   )

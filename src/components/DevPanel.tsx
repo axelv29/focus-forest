@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { playTone } from '@/logic/alarm'
 import {
   getNotificationPermission,
@@ -36,6 +36,7 @@ const SPECIES_OPTIONS: readonly { value: TreeSpecies; label: string }[] = [
   { value: 'abedul', label: 'Abedul' },
   { value: 'pino', label: 'Pino' },
   { value: 'roble', label: 'Roble' },
+  { value: 'ceibo', label: 'Ceibo' },
 ]
 
 const TREE_SPECIES_SELECT_OPTIONS = SPECIES_OPTIONS.map((option) => ({
@@ -48,30 +49,62 @@ const GARDEN_SIZE_OPTIONS = [4, 5, 6, 7, 8].map((size) => ({
   label: `${size}×${size}`,
 }))
 
+const FILL_SPECIES_OPTIONS = [
+  { value: 'mix', label: 'Mixto' },
+  { value: 'abedul', label: 'Abedul' },
+  { value: 'pino', label: 'Pino' },
+  { value: 'roble', label: 'Roble' },
+  { value: 'ceibo', label: 'Ceibo' },
+] as const
+
+type FillSpecies = (typeof FILL_SPECIES_OPTIONS)[number]['value']
+
 export function DevPanel() {
   const trees = useStore((state) => state.trees)
   const active = useStore((state) => state.active)
   const settings = useStore((state) => state.settings)
+  const forests = useStore((state) => state.forests)
+  const activeForestId = useStore((state) => state.activeForestId)
   const gardenSize = useStore((state) => state.devGardenSize)
   const setState = useStore.setState
   const [open, setOpen] = useState(false)
   const [permission, setPermission] = useState(getNotificationPermission())
+  const [fillSpecies, setFillSpecies] = useState<FillSpecies>('mix')
+
+  const activeForest = useMemo(() => {
+    if (activeForestId) {
+      return forests.find((forest) => forest.id === activeForestId) ?? null
+    }
+    return forests[0] ?? null
+  }, [forests, activeForestId])
+
+  const forestId = activeForest?.id ?? null
+  const forestTrees = useMemo(
+    () => (forestId ? trees.filter((tree) => tree.forestId === forestId) : []),
+    [trees, forestId],
+  )
+  const workingSize = activeForest?.size ?? gardenSize
 
   const addTree = (species: TreeSpecies) => {
-    const placement = choosePlacement(trees, Math.random, gardenSize, gardenSize)
+    if (!forestId) {
+      return
+    }
+
+    const placement = choosePlacement(forestTrees, Math.random, workingSize, workingSize)
 
     if (!placement || placement.replacedTreeId !== null) {
       return
     }
 
     const now = Date.now()
-    const tree = {
+    const tree: Tree = {
       id: `dev-tree-${now}-${Math.random().toString(16).slice(2)}`,
       sessionId: 'dev-session',
+      forestId,
       cell: placement.cell,
       kind: species,
-      stage: 1 as TreeStage,
-      state: 'mature' as TreeState,
+      stage: 1,
+      state: 'mature',
       createdAt: now,
     }
 
@@ -91,19 +124,31 @@ export function DevPanel() {
   }
 
   const clearTrees = () => {
-    setState({ trees: [] })
+    if (!forestId) {
+      return
+    }
+    setState({ trees: trees.filter((tree) => tree.forestId !== forestId) })
   }
 
   const fillGarden = () => {
-    const taken = new Set(trees.map((tree) => cellKey(tree.cell)))
+    if (!forestId) {
+      return
+    }
+
+    const speciesList: TreeSpecies[] = ['abedul', 'pino', 'roble', 'ceibo']
+    const taken = new Set(forestTrees.map((tree) => cellKey(tree.cell)))
     const now = Date.now()
-    const added: Tree[] = cellOrder(gardenSize, gardenSize)
+    const added: Tree[] = cellOrder(workingSize, workingSize)
       .filter((cell) => !taken.has(cellKey(cell)))
       .map((cell, index) => ({
         id: `dev-tree-${now}-${index}-${Math.random().toString(16).slice(2)}`,
         sessionId: 'dev-session',
+        forestId,
         cell,
-        kind: 'abedul',
+        kind:
+          fillSpecies === 'mix'
+            ? speciesList[Math.floor(Math.random() * speciesList.length)]
+            : fillSpecies,
         stage: 1,
         state: 'mature',
         createdAt: now + index,
@@ -115,8 +160,14 @@ export function DevPanel() {
   }
 
   const setAllStages = (stage: TreeStage) => {
+    if (!forestId) {
+      return
+    }
     setState({
       trees: trees.map((tree) => {
+        if (tree.forestId !== forestId) {
+          return tree
+        }
         const species = speciesFromKind(tree.kind)
         const stages = speciesConfig(species).stages
         const maxStage = stages[stages.length - 1].stage
@@ -127,7 +178,12 @@ export function DevPanel() {
   }
 
   const setAllStates = (state: TreeState) => {
-    setState({ trees: trees.map((tree) => ({ ...tree, state })) })
+    if (!forestId) {
+      return
+    }
+    setState({
+      trees: trees.map((tree) => (tree.forestId === forestId ? { ...tree, state } : tree)),
+    })
   }
 
   const advanceTime = (ms: number) => {
@@ -178,11 +234,17 @@ export function DevPanel() {
           <p className="eyebrow">DEV</p>
           <p className="type-body mt-1">Pruebas rápidas del bosque.</p>
 
+          <p className="type-caption type-muted mt-2">
+            Bosque actual: {activeForest ? `${activeForest.name} (${workingSize}×${workingSize})` : 'ninguno'} ·{' '}
+            {forestTrees.length} árboles
+          </p>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               className="btn btn-primary btn--sm"
               onClick={() => addTree('abedul')}
+              disabled={!forestId}
             >
               Agregar abedul
             </button>
@@ -190,6 +252,7 @@ export function DevPanel() {
               type="button"
               className="btn btn-secondary btn--sm"
               onClick={() => addTree('pino')}
+              disabled={!forestId}
             >
               Agregar pino
             </button>
@@ -197,21 +260,55 @@ export function DevPanel() {
               type="button"
               className="btn btn-secondary btn--sm"
               onClick={() => addTree('roble')}
+              disabled={!forestId}
             >
               Agregar roble
             </button>
-            <button type="button" className="btn btn-secondary btn--sm" onClick={fillGarden}>
+            <button
+              type="button"
+              className="btn btn-secondary btn--sm"
+              onClick={() => addTree('ceibo')}
+              disabled={!forestId}
+            >
+              Agregar ceibo
+            </button>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <div className="min-w-[9rem] flex-1">
+              <Select
+                className="select--block"
+                value={fillSpecies}
+                options={FILL_SPECIES_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+                onChange={(value) => setFillSpecies(value as FillSpecies)}
+                ariaLabel="Especie para llenar el bosque"
+              />
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn--sm"
+              onClick={fillGarden}
+              disabled={!forestId}
+            >
               Llenar bosque
             </button>
-            <button type="button" className="btn btn-secondary btn--sm" onClick={clearTrees}>
+            <button
+              type="button"
+              className="btn btn-secondary btn--sm"
+              onClick={clearTrees}
+              disabled={!forestId || forestTrees.length === 0}
+            >
               Limpiar bosque
             </button>
           </div>
 
           <div className="mt-4 border-t border-ink/10 pt-3">
-            <p className="eyebrow">Bosque</p>
+            <p className="eyebrow">Tamaño (preview)</p>
             <p className="type-caption type-muted mt-1">
-              Preview de bosques más chicos con el mismo pasto.
+              Solo afecta la vista previa cuando no hay bosque activo.
             </p>
             <div className="mt-2 max-w-xs">
               <Select
@@ -227,8 +324,8 @@ export function DevPanel() {
           <div className="mt-4 border-t border-ink/10 pt-3">
             <p className="eyebrow">Sesión</p>
             <p className="type-micro type-muted mt-0.5">
-              Los botones de −10 s / −1 min / −5 min / −10 min adelantan el tiempo: el restante
-              baja y el árbol crece.
+              Los botones de −10 s / −1 min / −5 min / −10 min adelantan el tiempo: el restante baja
+              y el árbol crece.
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <button
@@ -386,7 +483,7 @@ export function DevPanel() {
           </div>
 
           <div className="mt-4 border-t border-ink/10 pt-3">
-            <p className="eyebrow">Cambiar todos</p>
+            <p className="eyebrow">Cambiar todos (bosque actual)</p>
 
             <p className="type-caption type-muted mt-2">Etapa</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -395,7 +492,7 @@ export function DevPanel() {
                   key={option.value}
                   type="button"
                   className="btn btn-secondary btn--sm"
-                  disabled={trees.length === 0}
+                  disabled={forestTrees.length === 0}
                   onClick={() => setAllStages(option.value)}
                 >
                   {option.label}
@@ -408,7 +505,7 @@ export function DevPanel() {
               <button
                 type="button"
                 className="btn btn-secondary btn--sm"
-                disabled={trees.length === 0}
+                disabled={forestTrees.length === 0}
                 onClick={() => setAllStates('mature')}
               >
                 Vivos
@@ -416,7 +513,7 @@ export function DevPanel() {
               <button
                 type="button"
                 className="btn btn-secondary btn--sm"
-                disabled={trees.length === 0}
+                disabled={forestTrees.length === 0}
                 onClick={() => setAllStates('withered')}
               >
                 Marchitos
@@ -425,62 +522,69 @@ export function DevPanel() {
           </div>
 
           <div className="mt-4 space-y-2">
-            {trees.map((tree) => {
-              const species = speciesFromKind(tree.kind)
-              const stageOptions = speciesConfig(species).stages.map((item) => ({
-                value: String(item.stage),
-                label: item.label,
-              }))
+            <p className="eyebrow">Árboles del bosque actual</p>
+            {forestTrees.length === 0 ? (
+              <p className="type-caption type-muted">No hay árboles en este bosque.</p>
+            ) : (
+              forestTrees.map((tree) => {
+                const species = speciesFromKind(tree.kind)
+                const stageOptions = speciesConfig(species).stages.map((item) => ({
+                  value: String(item.stage),
+                  label: item.label,
+                }))
 
-              return (
-                <div
-                  key={tree.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/10 p-2"
-                >
-                  <span className="type-caption type-muted">{tree.id}</span>
-
-                  <Select
-                    className="select--block"
-                    value={species}
-                    options={TREE_SPECIES_SELECT_OPTIONS}
-                    onChange={(value) => {
-                      const next = value as TreeSpecies
-                      const stages = speciesConfig(next).stages
-                      const maxStage = stages[stages.length - 1].stage
-                      updateTree(tree.id, {
-                        kind: next,
-                        stage: (tree.stage > maxStage ? maxStage : tree.stage) as TreeStage,
-                      })
-                    }}
-                    ariaLabel={`Cambiar especie del árbol ${tree.id}`}
-                  />
-
-                  <Select
-                    className="select--block"
-                    value={String(tree.stage)}
-                    options={stageOptions}
-                    onChange={(value) => updateTree(tree.id, { stage: Number(value) as TreeStage })}
-                    ariaLabel={`Cambiar etapa del árbol ${tree.id}`}
-                  />
-
-                  <Select
-                    className="select--block"
-                    value={tree.state}
-                    options={TREE_STATE_SELECT_OPTIONS}
-                    onChange={(value) => updateTree(tree.id, { state: value as TreeState })}
-                    ariaLabel={`Cambiar estado del árbol ${tree.id}`}
-                  />
-
-                  <button
-                    type="button"
-                    className="btn btn-danger btn--sm w-full"
-                    onClick={() => removeTree(tree.id)}
+                return (
+                  <div
+                    key={tree.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/10 p-2"
                   >
-                    Eliminar
-                  </button>
-                </div>
-              )
-            })}
+                    <span className="type-caption type-muted">
+                      {speciesConfig(species).name} · celda {tree.cell.col},{tree.cell.row}
+                    </span>
+
+                    <Select
+                      className="select--block"
+                      value={species}
+                      options={TREE_SPECIES_SELECT_OPTIONS}
+                      onChange={(value) => {
+                        const next = value as TreeSpecies
+                        const stages = speciesConfig(next).stages
+                        const maxStage = stages[stages.length - 1].stage
+                        updateTree(tree.id, {
+                          kind: next,
+                          stage: (tree.stage > maxStage ? maxStage : tree.stage) as TreeStage,
+                        })
+                      }}
+                      ariaLabel={`Cambiar especie del árbol ${tree.id}`}
+                    />
+
+                    <Select
+                      className="select--block"
+                      value={String(tree.stage)}
+                      options={stageOptions}
+                      onChange={(value) => updateTree(tree.id, { stage: Number(value) as TreeStage })}
+                      ariaLabel={`Cambiar etapa del árbol ${tree.id}`}
+                    />
+
+                    <Select
+                      className="select--block"
+                      value={tree.state}
+                      options={TREE_STATE_SELECT_OPTIONS}
+                      onChange={(value) => updateTree(tree.id, { state: value as TreeState })}
+                      ariaLabel={`Cambiar estado del árbol ${tree.id}`}
+                    />
+
+                    <button
+                      type="button"
+                      className="btn btn-danger btn--sm w-full"
+                      onClick={() => removeTree(tree.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                )
+              })
+            )}
           </div>
         </section>
       )}

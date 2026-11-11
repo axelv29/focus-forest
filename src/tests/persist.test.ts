@@ -1,12 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { createSafeStorage, emptyState, isPersistedState, migrate } from '@/state/persist'
+import {
+  createSafeStorage,
+  DEFAULT_FOREST_ID,
+  emptyState,
+  isPersistedState,
+  migrate,
+} from '@/state/persist'
 import type { StorageIssue } from '@/state/storageStatus'
-import type { ActiveSession, FocusRecord, PersistedV2, Tree } from '@/state/types'
-import { DEFAULT_POMODORO_SETTINGS } from '@/state/types'
+import type { ActiveSession, FocusRecord, Forest, PersistedV3, Tree } from '@/state/types'
+import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from '@/state/types'
+
+const FOREST: Forest = {
+  id: DEFAULT_FOREST_ID,
+  name: 'Mi bosque',
+  description: null,
+  size: 8,
+  createdAt: 0,
+  endsOn: null,
+  goalHours: null,
+  archivedAt: null,
+}
 
 const TREE: Tree = {
   id: 'tree-1',
   sessionId: 'session-1',
+  forestId: DEFAULT_FOREST_ID,
   cell: { col: 0, row: 0 },
   stage: 4,
   state: 'mature',
@@ -15,6 +33,7 @@ const TREE: Tree = {
 
 const SESSION: FocusRecord = {
   id: 'session-1',
+  forestId: DEFAULT_FOREST_ID,
   startedAt: 0,
   endedAt: 1_500_000,
   durationMin: 25,
@@ -25,6 +44,7 @@ const SESSION: FocusRecord = {
 const ACTIVE: ActiveSession = {
   id: 'session-2',
   kind: 'focus',
+  forestId: DEFAULT_FOREST_ID,
   startedAt: 2_000,
   endsAt: 1_502_000,
   durationMin: 25,
@@ -33,12 +53,44 @@ const ACTIVE: ActiveSession = {
   cell: { col: 1, row: 1 },
 }
 
-const STATE: PersistedV2 = {
-  version: 2,
+const STATE: PersistedV3 = {
+  version: 3,
+  forests: [FOREST],
+  activeForestId: FOREST.id,
   trees: [TREE],
   sessions: [SESSION],
   active: ACTIVE,
   settings: { ...DEFAULT_POMODORO_SETTINGS },
+  display: { ...DEFAULT_DISPLAY_SETTINGS },
+}
+
+const LEGACY_TREE = {
+  id: 'tree-1',
+  sessionId: 'session-1',
+  cell: { col: 0, row: 0 },
+  stage: 4,
+  state: 'mature',
+  createdAt: 1_000,
+}
+
+const LEGACY_SESSION = {
+  id: 'session-1',
+  startedAt: 0,
+  endedAt: 1_500_000,
+  durationMin: 25,
+  status: 'completed',
+  treeId: 'tree-1',
+}
+
+const LEGACY_ACTIVE = {
+  id: 'session-2',
+  kind: 'focus',
+  startedAt: 2_000,
+  endsAt: 1_502_000,
+  durationMin: 25,
+  pausedAt: null,
+  pausedMs: 0,
+  cell: { col: 1, row: 1 },
 }
 
 function envelope(state: unknown, version: unknown): string {
@@ -75,35 +127,65 @@ describe('migrate', () => {
     expect(migrate({ trees: 'x', sessions: [{}], active: { kind: 'x' } }, 1)).toEqual(emptyState())
   })
 
-  it('conserva lo válido y descarta solo lo roto', () => {
+  it('conserva lo válido y lo adjunta al bosque recuperado', () => {
     const result = migrate(
       {
-        trees: [TREE, { nope: true }],
-        sessions: [SESSION, null],
-        active: ACTIVE,
+        trees: [LEGACY_TREE, { nope: true }],
+        sessions: [LEGACY_SESSION, null],
+        active: LEGACY_ACTIVE,
       },
       1,
     )
 
-    expect(result.trees).toEqual([TREE])
-    expect(result.sessions).toEqual([SESSION])
-    expect(result.active).toEqual(ACTIVE)
+    expect(result.forests).toHaveLength(1)
+    expect(result.forests[0]).toMatchObject({
+      id: DEFAULT_FOREST_ID,
+      name: 'Mi bosque',
+      size: 8,
+    })
+    expect(result.activeForestId).toBe(DEFAULT_FOREST_ID)
+    expect(result.trees).toEqual([{ ...LEGACY_TREE, forestId: DEFAULT_FOREST_ID }])
+    expect(result.sessions).toEqual([{ ...LEGACY_SESSION, forestId: DEFAULT_FOREST_ID }])
+    expect(result.active).toEqual({ ...LEGACY_ACTIVE, forestId: DEFAULT_FOREST_ID })
   })
 
   it('no borra datos compatibles de una versión futura', () => {
-    const result = migrate({ trees: [TREE], sessions: [SESSION], active: null }, 99)
+    const result = migrate({ trees: [LEGACY_TREE], sessions: [LEGACY_SESSION], active: null }, 99)
 
-    expect(result.trees).toEqual([TREE])
-    expect(result.sessions).toEqual([SESSION])
+    expect(result.trees).toEqual([{ ...LEGACY_TREE, forestId: DEFAULT_FOREST_ID }])
+    expect(result.sessions).toEqual([{ ...LEGACY_SESSION, forestId: DEFAULT_FOREST_ID }])
   })
 
   it('descarta celdas fuera de la grilla', () => {
     const result = migrate(
-      { trees: [{ ...TREE, cell: { col: 99, row: 0 } }], sessions: [], active: null },
+      { trees: [{ ...LEGACY_TREE, cell: { col: 99, row: 0 } }], sessions: [], active: null },
       1,
     )
 
     expect(result.trees).toEqual([])
+  })
+
+  it('acepta un estado de la versión actual', () => {
+    expect(migrate(STATE, 3)).toEqual(STATE)
+  })
+
+  it('recupera árboles huérfanos sin perderlos', () => {
+    const result = migrate(
+      {
+        ...STATE,
+        forests: [],
+        activeForestId: null,
+        trees: [{ ...TREE, forestId: 'forest-que-no-existe' }],
+        sessions: [],
+        active: null,
+      },
+      3,
+    )
+
+    expect(result.forests).toHaveLength(1)
+    expect(result.activeForestId).toBe(result.forests[0].id)
+    expect(result.trees).toHaveLength(1)
+    expect(result.trees[0].forestId).toBe(result.forests[0].id)
   })
 })
 
@@ -121,14 +203,15 @@ describe('isPersistedState', () => {
   })
 
   it('rechaza una versión distinta', () => {
-    expect(isPersistedState({ ...STATE, version: 3 })).toBe(false)
+    expect(isPersistedState({ ...STATE, version: 4 })).toBe(false)
+    expect(isPersistedState({ ...STATE, version: 2 })).toBe(false)
   })
 })
 
 describe('createSafeStorage', () => {
   it('lee un guardado válido sin avisos', () => {
     const { storage } = makeStorage()
-    const raw = envelope(STATE, 2)
+    const raw = envelope(STATE, 3)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -158,7 +241,7 @@ describe('createSafeStorage', () => {
 
   it('respalda y reinicia un estado con forma inválida', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, trees: 'x' }, 2)
+    const raw = envelope({ ...STATE, trees: 'x' }, 3)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -188,7 +271,7 @@ describe('createSafeStorage', () => {
 
   it('no toca una versión más nueva y bloquea las escrituras', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, version: 3 }, 3)
+    const raw = envelope({ ...STATE, version: 4 }, 4)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -198,7 +281,7 @@ describe('createSafeStorage', () => {
 
     expect(safe.getItem('focus-forest')).toBeNull()
     expect(storage.getItem('focus-forest')).toBe(raw)
-    expect(issues).toEqual([{ kind: 'future-version', version: 3 }])
+    expect(issues).toEqual([{ kind: 'future-version', version: 4 }])
 
     safe.setItem('focus-forest', 'nuevo')
     safe.removeItem('focus-forest')

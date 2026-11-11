@@ -4,7 +4,7 @@ Reglas del proyecto para cualquier persona o agente que trabaje en este reposito
 
 ## Qué es
 
-App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un árbol en una pradera isométrica de 8×8: pino a los 25 minutos, abedul a los 45 y roble desde los 60. Abandonar deja el árbol marchito. Todo se guarda en el navegador.
+App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un árbol en un bosque isométrico propio: pino a los 25 minutos, abedul a los 45, roble desde los 60 y ceibo desde los 90. Abandonar deja el árbol marchito. Un bosque representa un objetivo (una materia, un semestre, un examen) y tiene nombre, tamaño de 4×4 a 8×8 y, opcionalmente, descripción, fecha de fin y meta de horas. Todo se guarda en el navegador.
 
 ## Stack
 
@@ -57,19 +57,24 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Crecimiento
 
-- Especie por duración: 25 min → pino; 45 min o más → abedul; 60 min o más → roble. Se usa el bloque más cercano por debajo (`speciesForFocusMin`).
+- Especie por duración: 25 min → pino; 45 min o más → abedul; 60 min o más → roble; 90 min o más → ceibo. Se usa el bloque más cercano por debajo (`speciesForFocusMin`).
 - En Ajustes, los tiempos de pomodoro sin una especie configurada (15, 90 y 120) aparecen deshabilitados; al sumar una especie, su duración se habilita sola (`availableFocusMinutes`).
 - Abedul: 5 etapas proporcionales a los 45 minutos (0, 25, 50, 75 y 100 %): brote, plantín, joven, maduro y adulto.
 - Pino: 4 etapas proporcionales a los 25 minutos (0, 20, 60 y 100 %): brote, joven, maduro y adulto.
 - Roble: 7 etapas proporcionales a los 60 minutos (0, 16, 33, 50, 66, 83 y 100 %): brote, plantín, joven, maduro, grande, muy grande y adulto. Los abandonados usan `roble_muerto_atlas.png` (mismos 7 frames).
-- Una sesión de enfoque completada termina en la última etapa de su especie (5 en abedul, 4 en pino, 7 en roble).
+- Ceibo: 7 etapas proporcionales a los 90 minutos (0, 16, 33, 50, 66, 83 y 100 %): brote, plantín, joven, maduro, grande, muy grande y adulto. Los abandonados usan `ceibo_muerto_atlas.png` (mismos 7 frames).
+- Una sesión de enfoque completada termina en la última etapa de su especie (5 en abedul, 4 en pino, 7 en roble, 7 en ceibo).
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
 - Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
 - La nueva celda se elige aleatoriamente entre las libres, sin espaciamiento mínimo: se pueden ocupar las 64 celdas de la grilla. Si no quedan libres, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio.
 
 ### Datos
 
-- `PersistedV1` es la única forma guardada. Cualquier cambio de forma sube `version` y agrega un caso en `migrate`.
+- `PersistedV3` es la única forma guardada. Cualquier cambio de forma sube `version` y agrega un caso en `migrate`.
+- `Forest` es el contenedor del objetivo: `id`, `name`, `description`, `size` (4–8), `createdAt`, `endsOn` (clave local `YYYY-MM-DD` o `null`), `goalHours` (o `null`) y `archivedAt` (o `null`). Los árboles, las sesiones y la sesión activa llevan `forestId`; un descanso no tiene bosque.
+- Migrar datos viejos crea un bosque “Mi bosque” de 8×8 solo si había árboles, sesiones o una sesión activa, y les asigna ese `forestId`. Sin datos viejos, el estado inicial no tiene bosques: la pantalla de bienvenida muestra una pradera 8×8 de fondo y la tarjeta para crear el primero.
+- La fecha de fin se guarda como día local, no como epoch: evita corrimientos por zona horaria. El contador se deriva al renderizar con `Date.UTC` y no se persiste.
+- El nombre y el contador se pueden ocultar desde Ajustes (`display.showForestName`, `display.showCountdown`); por defecto se muestran ambos.
 - Los descansos no se guardan como historial; solo existe el descanso activo.
 - Las estadísticas se derivan; no guardar contadores duplicados.
 - Al rehidratar, reconciliar: enfoque vencido → completar; descanso vencido → cerrar; pausado → no completar.
@@ -77,11 +82,11 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Isometría
 
-- Celda 60×30; grilla 8×8; escena lógica 480×400 (240 de grilla + 128 de margen superior + 32 de tierra). La escala base se elige entera según el contenedor (0.5× solo si es más chico que la escena; luego 1×, 2×…). El zoom usa solo escalas pixel-perfect: múltiplos enteros de la escala de origen (0.5× solo como ajuste mínimo), sin medios pasos ni niveles intermedios fraccionarios. El zoom no baja de 1:1 salvo cuando la base ya es menor.
+- Celda 60×30; grilla máxima 8×8; escena lógica 480×400 (240 de grilla + 128 de margen superior + 32 de tierra). La escala base es la misma para todos los tamaños de bosque: un 8×8 llena la escena y un 4×4 se ve proporcionalmente más chico; la isla se centra verticalmente según su tamaño. La escala base se elige entera según el contenedor (0.5× solo si es más chico que la escena; luego 1×, 2×…). El zoom usa solo escalas pixel-perfect: múltiplos enteros de la escala de origen (0.5× solo como ajuste mínimo), sin medios pasos ni niveles intermedios fraccionarios. El zoom no baja de 1:1 salvo cuando la base ya es menor.
 - `x = origenX + (col - row) * 30`
 - `y = origenY + (col + row) * 15`
 - Orden de dibujo: `col + row` ascendente, desempate por `col`.
-- Sprites anclados en la base del tronco; cada especie usa su atlas y sus frames recortados, todos a tamaño nativo. El pino mide 122×92; el abedul vivo y el marchito miden 187×130 cada uno; el roble mide 314×142 y su marchito 278×144. Todos los frames incluyen la sombra pixelada semitransparente, así que el marco llega un poco más abajo que el arte y el anclaje marca la base del tronco; en horizontal apunta al centro de la sombra para que el árbol quede centrado en su celda.
+- Sprites anclados en la base del tronco; cada especie usa su atlas y sus frames recortados, todos a tamaño nativo. El pino mide 122×92; el abedul vivo y el marchito miden 187×130 cada uno; el roble mide 314×142 y su marchito 278×144; el ceibo mide 389×148 (vivo) y su marchito 350×143, con el adulto en 107×144 y el brote en 7×11. Todos los frames incluyen la sombra pixelada semitransparente, así que el marco llega un poco más abajo que el arte y el anclaje marca la base del tronco; en horizontal apunta al centro de la sombra para que el árbol quede centrado en su celda.
 - `imageSmoothingEnabled = false` y `image-rendering: pixelated`.
 - Redibujar al cambiar etapa, árboles o tamaño/zoom; no en cada tick del timer.
 
@@ -90,6 +95,9 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Español para la UI; inglés para identificadores, archivos y tipos.
 - Tema centralizado: `src/styles/theme.css` es la fuente de verdad; `src/index.css` lo registra en Tailwind y define las clases de componentes. No usar hex, tamaños de fuente ni sombras sueltas en los `.tsx`.
 - Tarjetas con `.card` (y `--compact`/`--roomy`); botones con `.btn` y variantes; textos con `.type-*` o `.eyebrow`. Ver `docs/THEMING.md`.
+- La creación de bosque es un diálogo aparte, no la pantalla de cambio de bosque. Se abre desde la tarjeta de bienvenida (o desde Iniciar cuando todavía no hay bosque) y usa el mismo sistema de tarjetas, botones, selects y campos que Ajustes. Incluye una vista previa con el atlas real y árboles de ejemplo de distintas especies y etapas. El selector de fecha es propio, no el calendario nativo del navegador.
+- La cabecera muestra el nombre del bosque activo y, si tiene fecha, un chip con “Faltan N días” / “Último día” / “Terminó…”. No se muestra nada si ambos ajustes están ocultos.
+- La vista **Bosques** (tercera opción del switch) lista los bosques con su tamaño y estado; elegir uno lo vuelve activo y lleva a la vista Bosque. Desde ahí también se crea un nuevo bosque.
 - En desktop las tarjetas se anclan a 16 px de los bordes de la ventana con ancho fluido: el timer es la tarjeta principal y siempre es más ancha que la de sesión.
 - Dos fuentes: Nunito (textos, títulos y timer) y Quicksand 600 (botones y controles). Se sirven desde `@fontsource`.
 - Forma suave: esquinas de 12 a 16 px, bordes finos translúcidos, sombras muy tenues y sin degradados, salvo el anillo del temporizador. Nada de estética pixel en el DOM.
@@ -113,7 +121,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - `--ref` mide el arte con alfa > 128, no los `h` del JSON. Con el atlas del pino da `[11,43,54,85]`; pasar `13,46,58,89` agranda los árboles. Las etapas extra usan el factor de la última etapa fijada (`--scale` para forzarlo).
 - No cambiar el filtro BOX, el alfa duro 0/255, la semilla 1 del k-means ni el redondeo: son la parte determinista. Nunca LANCZOS ni BICUBIC; las previews y la página escalan solo con NEAREST/`image-rendering: pixelated` y factores enteros.
 - El script no escribe JSON. Después de generar `atlas.png` hay que crear el `.json` con `x/y/w/h` y `anchor` (fórmulas y snippet en la guía). Sin JSON válido, `loadAtlas()` devuelve `null` y el render usa placeholders.
-- Nombres: vivos `^pino_([1-5])_` / `^abedul_([1-5])_` / `^roble_([1-7])_`, marchitos `^pino_muerto_([1-5])_` / `^abedul_muerto_([1-5])_` / `^roble_muerto_([1-7])_`; cada atlas vivo o marchito se carga por separado y el loader exige al menos los 4 frames del pino. La especie se guarda en `Tree.kind`; las sesiones sin especie se leen como pino.
+- Nombres: vivos `^pino_([1-5])_` / `^abedul_([1-5])_` / `^roble_([1-7])_` / `^ceibo_([1-7])_`, marchitos `^pino_muerto_([1-5])_` / `^abedul_muerto_([1-5])_` / `^roble_muerto_([1-7])_` / `^ceibo_muerto_([1-7])_`; cada atlas vivo o marchito se carga por separado y el loader exige al menos los 4 frames del pino. La especie se guarda en `Tree.kind`; las sesiones sin especie se leen como pino.
 - Antes de dar por bueno un atlas: revisar `preview_x6.png`, comprobar alfa 0/255, base alineada y paleta común, y verlo en la app a tamaño nativo y en los zoom enteros.
 
 ### Código

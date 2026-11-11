@@ -1,5 +1,5 @@
+import { ChartColumn, TreePine, Trees } from 'lucide-react'
 import type { View } from '@/config/views'
-import { BarsIcon, PineIcon } from './icons'
 
 interface ViewSwitchProps {
   view: View
@@ -17,7 +17,7 @@ export function ViewSwitch({ view, onChange, disabled = false }: ViewSwitchProps
         disabled={disabled}
         onClick={() => onChange('garden')}
       >
-        <PineIcon />
+        <TreePine />
         Bosque
       </button>
       <button
@@ -27,8 +27,18 @@ export function ViewSwitch({ view, onChange, disabled = false }: ViewSwitchProps
         disabled={disabled}
         onClick={() => onChange('stats')}
       >
-        <BarsIcon />
+        <ChartColumn />
         Estadísticas
+      </button>
+      <button
+        type="button"
+        className="view-switch__button"
+        aria-current={view === 'forests' ? 'page' : undefined}
+        disabled={disabled}
+        onClick={() => onChange('forests')}
+      >
+        <Trees />
+        Bosques
       </button>
     </div>
   )

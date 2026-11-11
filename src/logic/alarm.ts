@@ -13,7 +13,8 @@ const TONE_FREQUENCIES: Record<AlarmTone, number[]> = {
 export function playTone(tone: AlarmTone, volume = 0.6): boolean {
   const AudioContextCtor =
     typeof window !== 'undefined'
-      ? window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      ? window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       : undefined
 
   if (!AudioContextCtor) {
@@ -45,9 +46,12 @@ export function playTone(tone: AlarmTone, volume = 0.6): boolean {
     }
 
     // Cerrar el contexto tras reproducir.
-    window.setTimeout(() => {
-      void ctx.close()
-    }, Math.ceil(time * 1000) + 200)
+    window.setTimeout(
+      () => {
+        void ctx.close()
+      },
+      Math.ceil(time * 1000) + 200,
+    )
 
     return true
   } catch {

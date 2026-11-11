@@ -7,10 +7,11 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import {
-  GRID_PIXEL_HEIGHT,
+  GRID_COLS,
   ISLAND_DEPTH,
   SCENE_HEIGHT,
   SCENE_WIDTH,
+  TILE_HEIGHT,
   TOP_PADDING,
 } from '@/config/grid'
 import { DEFAULT_ZOOM, MAX_ZOOM } from '@/config/zoom'
@@ -32,7 +33,7 @@ import {
   type Atlas,
 } from '@/render/sprites'
 import type { Tree } from '@/state/types'
-import { MinusIcon, PlusIcon, ResetIcon } from './icons'
+import { MinusIcon, PineIcon, PlusIcon, ResetIcon } from './icons'
 
 interface GardenCanvasProps {
   trees: readonly Tree[]
@@ -40,6 +41,7 @@ interface GardenCanvasProps {
   label: string
   /** Tamaño del bosque en celdas por lado; 8×8 por defecto. */
   gardenSize: number
+  hasForest: boolean
 }
 
 interface DragState {
@@ -53,10 +55,14 @@ interface DragState {
 const NO_DRAG_SELECTOR =
   'button, input, textarea, select, a, label, .zoom-control, .card, .dialog-backdrop, [role="dialog"], [role="button"], [contenteditable="true"], [data-no-pan]'
 
-/** Diferencia entre el centro visual del diorama y el centro de la escena. */
-const MAP_CENTER_OFFSET_Y = TOP_PADDING + (GRID_PIXEL_HEIGHT + ISLAND_DEPTH) / 2 - SCENE_HEIGHT / 2
+/**
+ * La card de "empezá un pomodoro para plantar tu primer árbol" es solo una pista:
+ * se retira sola del canvas tras unos segundos. La de bienvenida (sin bosque) no
+ * se toca: sigue siendo el onboarding.
+ */
+const FIRST_TREE_PROMPT_AUTO_HIDE_MS = 5000
 
-export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasProps) {
+export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gardenRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -74,6 +80,10 @@ export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasP
   const dpr = typeof window === 'undefined' ? 1 : Math.max(1, window.devicePixelRatio || 1)
 
   const hasGardenSize = gardenBox.width > 0 && gardenBox.height > 0
+  // La escala base es la misma para todos los tamaños: el bosque de 8×8 llena
+  // la escena y los más chicos se ven proporcionalmente más chicos. El zoom
+  // queda disponible para acercarse a un bosque de 4×4.
+  const meadowTop = TOP_PADDING + (GRID_COLS - gardenSize) * TILE_HEIGHT
   const idealBaseScale = hasGardenSize
     ? Math.min((gardenBox.width * dpr) / SCENE_WIDTH, (gardenBox.height * dpr) / SCENE_HEIGHT)
     : 1
@@ -89,9 +99,10 @@ export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasP
   const canvasHeight = Math.max(1, Math.round(SCENE_HEIGHT * pixelScale))
   const canvasCssWidth = canvasWidth / dpr
   const canvasCssHeight = canvasHeight / dpr
-  // Centra el diorama, no solo la caja del canvas; así el recorrido tiene el
-  // mismo aire arriba y abajo.
-  const mapCenterOffsetY = (MAP_CENTER_OFFSET_Y * pixelScale) / dpr
+  // Centra la isla del tamaño activo, no el lienzo de 8×8. Los bosques chicos
+  // quedan anclados abajo en la escena y necesitan más desplazamiento.
+  const islandCenterY = meadowTop + (gardenSize * TILE_HEIGHT + ISLAND_DEPTH) / 2
+  const mapCenterOffsetY = ((islandCenterY - SCENE_HEIGHT / 2) * pixelScale) / dpr
   // El límite crece con el zoom y con el desborde real del canvas. Guardamos la
   // posición como fracción del límite para que al cambiar de zoom se mantenga
   // proporcional y no salte al volver a acercar.
@@ -110,9 +121,30 @@ export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasP
     [panRatio.x, panRatio.y, panLimits.x, panLimits.y],
   )
 
+  const showFirstTreePrompt = hasForest && trees.length === 0 && !active
+  const [dismissedFirstTreePrompt, setDismissedFirstTreePrompt] = useState(false)
+  const [lastPromptState, setLastPromptState] = useState(showFirstTreePrompt)
+  if (showFirstTreePrompt !== lastPromptState) {
+    setLastPromptState(showFirstTreePrompt)
+    setDismissedFirstTreePrompt(false)
+  }
+  const firstTreePromptVisible = showFirstTreePrompt && !dismissedFirstTreePrompt
+
   useLayoutEffect(() => {
     panRef.current = pan
   }, [pan])
+
+  useEffect(() => {
+    if (!firstTreePromptVisible) {
+      return
+    }
+
+    const timeout = window.setTimeout(
+      () => setDismissedFirstTreePrompt(true),
+      FIRST_TREE_PROMPT_AUTO_HIDE_MS,
+    )
+    return () => window.clearTimeout(timeout)
+  }, [firstTreePromptVisible])
 
   useEffect(() => {
     if (!SPRITES_ENABLED) {
@@ -347,11 +379,24 @@ export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasP
         draggable={false}
       />
 
-      {trees.length === 0 && !active && (
+      {trees.length === 0 && !active && !dismissedFirstTreePrompt && (
         <div className="pointer-events-none absolute inset-x-0 top-[56%] z-10 flex justify-center px-6">
-          <p className="card card--compact type-body max-w-xs text-center font-medium">
-            Empezá un pomodoro para plantar tu primer árbol.
-          </p>
+          {hasForest ? (
+            <p className="card card--compact type-body max-w-xs text-center font-medium">
+              Empezá un pomodoro para plantar tu primer árbol.
+            </p>
+          ) : (
+            <div className="card card--compact forest-welcome pointer-events-auto">
+              <span className="session-icon forest-welcome__icon">
+                <PineIcon />
+              </span>
+              <p className="type-title">Creá tu bosque</p>
+              <p className="type-caption type-muted forest-welcome__copy">
+                Un objetivo, un lugar para crecer. Abrí la sección <strong>Bosques</strong> para
+                crear el primero.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

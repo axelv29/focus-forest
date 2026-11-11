@@ -89,13 +89,22 @@ Las opciones, comparadas:
 - **Sesión de enfoque:** 25 minutos fijos. Empezar, pausar, reanudar y abandonar. La cuenta se calcula con hora de inicio y fin, no restando segundos.
 - **Descanso:** 5 minutos fijos. Se ofrece al completar el enfoque con un botón; no arranca solo. Se puede pausar o saltar. No planta árbol ni suma estadísticas.
 - **Crecimiento:** 4 etapas dentro de los 25 minutos: brote (0), joven (5), maduro (15) y adulto (25). Al abandonar, el árbol queda marchito con la variante de la etapa alcanzada.
-- **Pradera:** grilla isométrica de 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante.
+- **Pradera:** grilla isométrica de 4×4 a 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante. La escala base es común a todos los tamaños; los bosques chicos se ven proporcionalmente más chicos y se pueden acercar con el zoom.
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
 - **Interfaz:** vista Bosque y vista Estadísticas, con el selector dentro de la tarjeta del timer. La tarjeta de sesión queda visible durante el enfoque (también en pausa) y se oculta en descanso. El selector se deshabilita mientras hay una sesión activa; timer, pausa y abandonar siguen a mano.
 - **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con tres botones flotantes (acercar, alejar, restablecer) y rueda del mouse. No hay slider ni porcentaje visible. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
 
 - **Arrastre de la pradera:** con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página, sin cambiar el cursor. El diorama se centra verticalmente y los límites se miden simétricamente desde ese centro. El recorrido base escala con el zoom y suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para conservarse proporcional al zoomear. El botón de retícula restablece el zoom y recentra. El arrastre no modifica el timer, los árboles ni el store.
+
+### Bosques: implementado en esta etapa
+
+- **Entidad `Forest`:** nombre, descripción opcional, tamaño 4×4–8×8, fecha de fin opcional, meta de horas opcional y archivado futuro. Árboles, sesiones y sesión activa llevan `forestId`.
+- **Persistencia V3:** migración de datos viejos a un bosque “Mi bosque” 8×8; sin datos viejos no se crea un bosque falso. El estado inicial muestra la pradera 8×8 de fondo con la tarjeta de bienvenida.
+- **Creación:** diálogo con nombre, descripción, tamaño en un select con capacidad, fecha opcional con calendario propio y contador, meta de horas y vista previa con el atlas real. Se abre desde la bienvenida o desde Iniciar si todavía no hay bosque.
+- **Identidad visible:** la cabecera muestra el nombre del bosque y el contador de días. Los toggles para ocultarlos ya existen en el modelo (`display`) y se conectarán en Ajustes.
+- **Estadísticas por bosque:** el timer, la tarjeta de sesión y Estadísticas filtran por el bosque activo; Estadísticas muestra totales globales cuando hay más de un bosque.
+- **Pendiente de esta serie:** edición/archivado/eliminación de bosques, toggles de nombre/contador en Ajustes, historial por bosque y vista por período (mes/semana/año). El cambio de bosque (vista Bosques) quedó implementado.
 
 ### Después
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FOCUS_MINUTES } from '@/config/timer'
 import type { View } from '@/config/views'
 import { elapsedMs, remainingMs } from '@/logic/timer'
-import { selectStats } from '@/state/selectors'
+import { selectActiveForest, selectStats } from '@/state/selectors'
 import { useStore } from '@/state/store'
 import { CloseIcon, GearIcon, PauseIcon, PlayIcon } from './icons'
 import { SettingsPanel } from './SettingsPanel'
@@ -15,6 +15,7 @@ interface TimerPanelProps {
   onChangeView: (view: View) => void
   onAbandonRequest: () => void
   onStrictPauseRequest: () => void
+  onCreateForest: () => void
 }
 
 export function TimerPanel({
@@ -23,17 +24,22 @@ export function TimerPanel({
   onChangeView,
   onAbandonRequest,
   onStrictPauseRequest,
+  onCreateForest,
 }: TimerPanelProps) {
   const active = useStore((state) => state.active)
   const sessions = useStore((state) => state.sessions)
   const trees = useStore((state) => state.trees)
+  const forests = useStore((state) => state.forests)
+  const activeForestId = useStore((state) => state.activeForestId)
   const settings = useStore((state) => state.settings)
   const startFocus = useStore((state) => state.startFocus)
   const pause = useStore((state) => state.pause)
   const resume = useStore((state) => state.resume)
   const skipBreak = useStore((state) => state.skipBreak)
   const updateSettings = useStore((state) => state.updateSettings)
-  const stats = selectStats(sessions, trees, now)
+  const forestId = active?.kind === 'focus' ? active.forestId : activeForestId
+  const activeForest = selectActiveForest(forests, forestId)
+  const stats = selectStats(sessions, trees, now, activeForest?.id)
   const [showSettings, setShowSettings] = useState(false)
 
   const isPaused = active?.pausedAt !== null && active?.pausedAt !== undefined
@@ -105,7 +111,17 @@ export function TimerPanel({
 
           <div className="timer-actions">
             {!active && (
-              <button type="button" className="btn btn-primary" onClick={() => startFocus(now)}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  if (!activeForest) {
+                    onCreateForest()
+                    return
+                  }
+                  startFocus(now)
+                }}
+              >
                 <PlayIcon />
                 Iniciar
               </button>
@@ -113,11 +129,7 @@ export function TimerPanel({
 
             {active && (
               <>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handlePause}
-                >
+                <button type="button" className="btn btn-primary" onClick={handlePause}>
                   {isPaused ? <PlayIcon /> : <PauseIcon />}
                   {isPaused ? 'Reanudar' : 'Pausar'}
                 </button>

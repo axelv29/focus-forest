@@ -87,11 +87,18 @@ Los tokens `--button-*` controlan borde, padding, radio, sombra y colores. Los e
 ### 5. Otros elementos
 
 - `.timer-ring`, `.timer-ring__track`, `.timer-ring__fill`, `.timer-ring__tip`, `.timer-ring__time`, `.timer-ring__caption` — anillo del temporizador. Su degradado verde es el único degradado sancionado del tema.
-- `.view-switch`, `.view-switch__button` — selector Bosque / Estadísticas. Se deshabilita durante una sesión activa.
+- `.view-switch`, `.view-switch__button` — selector Bosque / Estadísticas / Bosques; se deshabilita durante una sesión activa.
+- `.forest-switcher`, `.forest-switcher__list`, `.forest-switcher__create`, `.forest-row`, `.forest-row__name`, `.forest-row__description`, `.forest-row__meta`, `.forest-switcher__empty` — listado de bosques.
 - `.stage-track` y sus modificadores `--done`, `--current`, `--upcoming` — línea de etapas de la tarjeta de sesión.
 - `.session-data` y sus filas — datos de la sesión.
 - `.toast--success`, `.toast--warning`, `.toast--info` — tono de los avisos. El tono se elige en `CompletionToast.tsx` solo por nombre de clase.
-- `.dialog-backdrop` — fondo del diálogo de confirmación.
+- `.dialog-backdrop` — fondo del diálogo de confirmación y del diálogo de creación de bosque.
+- `.forest-header`, `.forest-header__name`, `.forest-countdown` (`--active`, `--past`), `.forest-countdown__button`, `.forest-countdown__tip`, `.forest-countdown__bubble` — nombre del bosque y calendario discreto de días restantes (toggle al click/tap, tooltip al hover/focus).
+- `.forest-welcome`, `.forest-welcome__icon`, `.forest-welcome__copy` — tarjeta de bienvenida para crear el primer bosque.
+- `.forest-dialog` y sus partes, `.forest-field`, `.field-input`, `.field-textarea`, `.forest-check`, `.forest-date-row`, `.forest-goal`, `.forest-form__error` — formulario de creación.
+- `.forest-preview` y sus partes, `.forest-preview-canvas` — vista previa con el atlas real.
+- `.date-field` y `.date-popover` con `.date-day` (`--selected`, `--today`, `--disabled`, `--blank`) — calendario propio, no el control nativo.
+- `.btn:disabled` — estado deshabilitado de los botones.
 - `.zoom-control`, `.zoom-button` — tres botones flotantes (acercar, alejar, restablecer); no hay slider ni porcentaje visible.
 
 ## Cambiar el tema completo

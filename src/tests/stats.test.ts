@@ -14,6 +14,7 @@ function record(
 ): FocusRecord {
   return {
     id,
+    forestId: 'forest-test',
     startedAt: endedAt - 25 * MINUTE,
     endedAt,
     durationMin: 25,
@@ -26,6 +27,7 @@ function tree(id: string, state: Tree['state']): Tree {
   return {
     id,
     sessionId: `session-${id}`,
+    forestId: 'forest-test',
     cell: { col: 0, row: 0 },
     stage: 4,
     state,

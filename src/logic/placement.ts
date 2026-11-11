@@ -71,7 +71,12 @@ export function choosePlacement(
   cols: number = GRID_COLS,
   rows: number = GRID_ROWS,
 ): Placement | null {
-  const free = nextFreeCell(trees.map((tree) => tree.cell), cols, rows, random)
+  const free = nextFreeCell(
+    trees.map((tree) => tree.cell),
+    cols,
+    rows,
+    random,
+  )
   if (free) {
     return { cell: free, replacedTreeId: null }
   }

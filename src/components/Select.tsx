@@ -69,10 +69,7 @@ export function Select({
     const spaceBelow = window.innerHeight - rect.bottom - 10
     const spaceAbove = rect.top - 10
     const opensUp = spaceBelow < Math.min(estimatedHeight, 180) && spaceAbove > spaceBelow
-    const maxHeight = Math.max(
-      96,
-      Math.min(estimatedHeight, opensUp ? spaceAbove : spaceBelow),
-    )
+    const maxHeight = Math.max(96, Math.min(estimatedHeight, opensUp ? spaceAbove : spaceBelow))
     const top = opensUp ? rect.top - maxHeight - 6 : rect.bottom + 6
 
     setMenuStyle({ top, left, width, maxHeight })

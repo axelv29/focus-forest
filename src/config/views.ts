@@ -1,1 +1,1 @@
-export type View = 'garden' | 'stats'
+export type View = 'garden' | 'stats' | 'forests'
