@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { finalStage, speciesForFocusMin } from '@/config/species'
+import { DEFAULT_GARDEN_SIZE } from '@/config/grid'
 import { stageForElapsedMs } from '@/logic/growth'
 import { choosePlacement } from '@/logic/placement'
 import {
@@ -25,6 +26,8 @@ export interface Notice {
 interface StoreState extends PersistedV2 {
   pendingBreak: boolean
   notice: Notice | null
+  /** Dev: tamaño del bosque en celdas por lado para el preview del panel. */
+  devGardenSize: number
   startFocus: (now: number) => void
   startBreak: (now: number) => void
   pause: (now: number) => void
@@ -103,6 +106,7 @@ export const useStore = create<StoreState>()(
         settings: { ...DEFAULT_POMODORO_SETTINGS },
         pendingBreak: false,
         notice: null,
+        devGardenSize: DEFAULT_GARDEN_SIZE,
 
         startFocus: (now) => {
           if (get().active) {

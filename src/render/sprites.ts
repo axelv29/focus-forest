@@ -1,3 +1,4 @@
+import { GRID_COLS } from '@/config/grid'
 import type { TreeSpecies, TreeStage, TreeState } from '@/state/types'
 
 export interface AtlasFrame {
@@ -28,6 +29,17 @@ export const SPRITES_ENABLED = true
 
 /** Suelo completo 8×8, a su tamaño nativo (sin escalar). */
 export const GROUND_TILE_URL = '/sprites/tileset8x8.png?v=4'
+
+/** Tamaños de bosque con su propio sheet de suelo en `public/sprites/`. */
+export const GROUND_TILE_SIZES = [4, 5, 6, 7, 8] as const
+
+/**
+ * URL del sheet de suelo para un bosque de `size` celdas por lado.
+ * Todos los sheets miden 487×270 y comparten anclaje (rombo abajo-centro).
+ */
+export function groundTileUrl(size: number): string {
+  return size === GRID_COLS ? GROUND_TILE_URL : `/sprites/tileset${size}x${size}.png?v=1`
+}
 
 /** Clave interna de un frame: especie, etapa y estado. */
 export function treeFrameName(species: TreeSpecies, stage: TreeStage, state: TreeState): string {
@@ -213,10 +225,10 @@ async function loadAtlasOnce(): Promise<Atlas | null> {
   return { images, frames }
 }
 
-/** Carga el suelo completo. Si falla, el render vuelve a la grilla procedural. */
-export async function loadGroundTile(): Promise<HTMLImageElement | null> {
+/** Carga el suelo del tamaño pedido. Si falla, el render vuelve a la grilla procedural. */
+export async function loadGroundTile(size: number = GRID_COLS): Promise<HTMLImageElement | null> {
   try {
-    return await loadImage(GROUND_TILE_URL)
+    return await loadImage(groundTileUrl(size))
   } catch {
     return null
   }

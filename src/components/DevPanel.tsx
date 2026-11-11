@@ -43,16 +43,22 @@ const TREE_SPECIES_SELECT_OPTIONS = SPECIES_OPTIONS.map((option) => ({
   label: option.label,
 }))
 
+const GARDEN_SIZE_OPTIONS = [4, 5, 6, 7, 8].map((size) => ({
+  value: String(size),
+  label: `${size}×${size}`,
+}))
+
 export function DevPanel() {
   const trees = useStore((state) => state.trees)
   const active = useStore((state) => state.active)
   const settings = useStore((state) => state.settings)
+  const gardenSize = useStore((state) => state.devGardenSize)
   const setState = useStore.setState
   const [open, setOpen] = useState(false)
   const [permission, setPermission] = useState(getNotificationPermission())
 
   const addTree = (species: TreeSpecies) => {
-    const placement = choosePlacement(trees, Math.random)
+    const placement = choosePlacement(trees, Math.random, gardenSize, gardenSize)
 
     if (!placement || placement.replacedTreeId !== null) {
       return
@@ -91,7 +97,7 @@ export function DevPanel() {
   const fillGarden = () => {
     const taken = new Set(trees.map((tree) => cellKey(tree.cell)))
     const now = Date.now()
-    const added: Tree[] = cellOrder()
+    const added: Tree[] = cellOrder(gardenSize, gardenSize)
       .filter((cell) => !taken.has(cellKey(cell)))
       .map((cell, index) => ({
         id: `dev-tree-${now}-${index}-${Math.random().toString(16).slice(2)}`,
@@ -200,6 +206,22 @@ export function DevPanel() {
             <button type="button" className="btn btn-secondary btn--sm" onClick={clearTrees}>
               Limpiar bosque
             </button>
+          </div>
+
+          <div className="mt-4 border-t border-ink/10 pt-3">
+            <p className="eyebrow">Bosque</p>
+            <p className="type-caption type-muted mt-1">
+              Preview de bosques más chicos con el mismo pasto.
+            </p>
+            <div className="mt-2 max-w-xs">
+              <Select
+                className="select--block"
+                value={String(gardenSize)}
+                options={GARDEN_SIZE_OPTIONS}
+                onChange={(value) => useStore.setState({ devGardenSize: Number(value) })}
+                ariaLabel="Tamaño del bosque en celdas por lado"
+              />
+            </div>
           </div>
 
           <div className="mt-4 border-t border-ink/10 pt-3">

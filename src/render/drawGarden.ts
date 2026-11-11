@@ -1,7 +1,5 @@
 import {
   GRID_COLS,
-  GRID_PIXEL_HEIGHT,
-  GRID_ROWS,
   ISLAND_DEPTH,
   ORIGIN_X,
   SCENE_HEIGHT,
@@ -26,6 +24,8 @@ export interface DrawGardenOptions {
   active?: ActiveTreePreview | null
   atlas?: Atlas | null
   groundTile?: HTMLImageElement | null
+  /** Tamaño del bosque en celdas por lado (preview del panel dev). Por defecto 8×8. */
+  gardenSize?: number
 }
 
 interface DrawableTree {
@@ -45,14 +45,23 @@ const STAGE_SCALE: Record<TreeStage, number> = {
   7: 1,
 }
 
-/** Vértice superior de `tileset8x8.png` dentro de la imagen. */
+/**
+ * Anclaje del sheet de suelo: el vértice superior del rombo 8×8 cae en
+ * (243.5, 5) de la imagen. Todos los tilesets por tamaño (4×4…8×8) miden
+ * 487×270 y comparten ese anclaje, así que se dibujan enteros, sin recorte.
+ */
 const GROUND_SHEET_TOP_X = 243.5
 const GROUND_SHEET_TOP_Y = 5
 
 export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOptions): void {
+  const size = Math.min(GRID_COLS, Math.max(1, Math.round(options.gardenSize ?? GRID_COLS)))
+  // El rombo más chico se ancla abajo: la punta baja (8 − size) filas.
+  const meadowTop = TOP_PADDING + (GRID_COLS - size) * TILE_HEIGHT
   const pixelWidth = ctx.canvas.width
   const pixelHeight = ctx.canvas.height
   // El canvas ya tiene el tamaño exacto de la escena a una escala entera.
+  // La escena es siempre 480×400: cada sheet por tamaño trae su isla
+  // anclada abajo-centro en el mismo lienzo de 487×270.
   const scale = Math.min(pixelWidth / SCENE_WIDTH, pixelHeight / SCENE_HEIGHT)
   const offsetX = Math.round((pixelWidth - SCENE_WIDTH * scale) / 2)
   const offsetY = Math.round((pixelHeight - SCENE_HEIGHT * scale) / 2)
@@ -66,20 +75,23 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
     drawGroundSheet(ctx, options.groundTile, scale, offsetX, offsetY)
   } else {
     ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
-    drawIsland(ctx)
-    drawGrid(ctx)
+    drawIsland(ctx, size, meadowTop)
+    drawGrid(ctx, size, meadowTop)
   }
 
   ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
-  const trees: DrawableTree[] = options.trees.map((tree) => ({
-    cell: tree.cell,
-    species: speciesFromKind(tree.kind),
-    stage: tree.stage,
-    state: tree.state,
-  }))
+  const meadowShift = meadowTop - TOP_PADDING
+  const trees: DrawableTree[] = options.trees
+    .filter((tree) => isInsideGarden(tree.cell, size))
+    .map((tree) => ({
+      cell: tree.cell,
+      species: speciesFromKind(tree.kind),
+      stage: tree.stage,
+      state: tree.state,
+    }))
 
-  if (options.active) {
+  if (options.active && isInsideGarden(options.active.cell, size)) {
     trees.push({
       cell: options.active.cell,
       species: options.active.species,
@@ -89,17 +101,24 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
   }
 
   for (const tree of sortByDepth(trees)) {
-    drawTree(ctx, tree, options.atlas ?? null)
+    drawTree(ctx, tree, options.atlas ?? null, meadowShift)
   }
 }
 
-function drawIsland(ctx: CanvasRenderingContext2D): void {
-  const topY = TOP_PADDING
-  const middleY = TOP_PADDING + GRID_PIXEL_HEIGHT / 2
-  const bottomY = TOP_PADDING + GRID_PIXEL_HEIGHT
+/** Los árboles fuera del bosque elegido no se dibujan en la preview. */
+function isInsideGarden(cell: Cell, size: number): boolean {
+  return cell.col >= 0 && cell.col < size && cell.row >= 0 && cell.row < size
+}
+
+function drawIsland(ctx: CanvasRenderingContext2D, size: number, meadowTop: number): void {
+  const topY = meadowTop
+  // La base inferior queda siempre en la misma fila (368), igual que en los
+  // sheets: los bosques más chicos se anclan abajo.
+  const bottomY = meadowTop + size * TILE_HEIGHT
+  const middleY = (topY + bottomY) / 2
   const centerX = ORIGIN_X
-  const leftX = 0
-  const rightX = SCENE_WIDTH
+  const leftX = ORIGIN_X - (size * TILE_WIDTH) / 2
+  const rightX = ORIGIN_X + (size * TILE_WIDTH) / 2
 
   // Cara izquierda de la tierra.
   ctx.fillStyle = '#8b644a'
@@ -132,7 +151,7 @@ function drawIsland(ctx: CanvasRenderingContext2D): void {
   ctx.fill()
 }
 
-/** El suelo es una sola imagen 8×8; se dibuja con escala entera. */
+/** Dibuja el sheet de suelo completo del tamaño elegido, sin recortar. */
 function drawGroundSheet(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -147,13 +166,14 @@ function drawGroundSheet(
   ctx.drawImage(image, Math.round(x), Math.round(y), image.width * scale, image.height * scale)
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D): void {
+function drawGrid(ctx: CanvasRenderingContext2D, size: number, meadowTop: number): void {
   ctx.strokeStyle = 'rgba(32, 63, 59, 0.26)'
   ctx.lineWidth = 1.25
 
-  for (let row = 0; row < GRID_ROWS; row += 1) {
-    for (let col = 0; col < GRID_COLS; col += 1) {
-      const { x, y } = cellToScreen({ col, row })
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      const x = ORIGIN_X + (col - row) * (TILE_WIDTH / 2)
+      const y = meadowTop + (col + row) * (TILE_HEIGHT / 2) + TILE_HEIGHT / 2
 
       ctx.beginPath()
       ctx.moveTo(x, y - TILE_HEIGHT / 2)
@@ -169,9 +189,16 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
   }
 }
 
-function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atlas | null): void {
+function drawTree(
+  ctx: CanvasRenderingContext2D,
+  tree: DrawableTree,
+  atlas: Atlas | null,
+  meadowShift: number,
+): void {
   const { x, y } = cellToScreen(tree.cell)
-  const baseY = y + 4
+  // En bosques más chicos la pradera entera baja (8 − size) filas.
+  const groundY = y + meadowShift
+  const baseY = groundY + 4
 
   // Los atlas incluyen la sombra pixelada, vivos y marchitos.
   if (atlas) {
@@ -189,7 +216,7 @@ function drawTree(ctx: CanvasRenderingContext2D, tree: DrawableTree, atlas: Atla
   ctx.save()
   ctx.fillStyle = 'rgba(32, 63, 59, 0.16)'
   ctx.beginPath()
-  ctx.ellipse(x, y, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
+  ctx.ellipse(x, groundY, 20 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 

@@ -68,13 +68,10 @@ export interface Placement {
 export function choosePlacement(
   trees: readonly Tree[],
   random: () => number = Math.random,
+  cols: number = GRID_COLS,
+  rows: number = GRID_ROWS,
 ): Placement | null {
-  const free = nextFreeCell(
-    trees.map((tree) => tree.cell),
-    GRID_COLS,
-    GRID_ROWS,
-    random,
-  )
+  const free = nextFreeCell(trees.map((tree) => tree.cell), cols, rows, random)
   if (free) {
     return { cell: free, replacedTreeId: null }
   }

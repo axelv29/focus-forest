@@ -98,4 +98,13 @@ describe('choosePlacement', () => {
 
     expect(choosePlacement(trees)).toBeNull()
   })
+
+  it('planta dentro de un bosque más chico que el default', () => {
+    const trees = [treeAt('withered', { col: 0, row: 0 }, 'withered', 1)]
+    const placement = choosePlacement(trees, () => 0, 4, 4)
+
+    expect(placement?.replacedTreeId).toBeNull()
+    expect(placement?.cell.col).toBeLessThan(4)
+    expect(placement?.cell.row).toBeLessThan(4)
+  })
 })

@@ -12,6 +12,11 @@ Acá van los assets finales de los árboles.
 - `roble_muerto_atlas.png` + `roble_muerto_atlas.json`: los 7 frames de robles marchitos (los que usa la app).
 - `tileset8x8.png`: suelo completo de la pradera 8×8; el render lo dibuja como una sola imagen, con escala base entera y zoom solo en escalas enteras.
 
+## Bosques de distinto tamaño
+
+- `tileset4x4.png` … `tileset8x8.png`: un sheet de suelo por tamaño de bosque (4×4 a 8×8 celdas por lado). Todos miden 487×270, con el rombo de pasto y la isla anclados abajo-centro en el mismo lienzo, así que el render dibuja el archivo completo del tamaño elegido, sin recortar ni escalar.
+- El preview de tamaños vive en el panel dev (`Tamaño del bosque en celdas por lado`); el valor por defecto sigue siendo el 8×8.
+
 ## Frames
 
 El render normaliza cada frame a la clave `especie.etapa.estado`:

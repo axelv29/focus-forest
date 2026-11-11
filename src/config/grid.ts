@@ -17,6 +17,9 @@ export const GRID_PIXEL_HEIGHT = (GRID_COLS + GRID_ROWS) * (TILE_HEIGHT / 2)
 export const TREE_SPRITE_WIDTH = 64
 export const TREE_SPRITE_HEIGHT = 128
 
+/** Tamaño del bosque por defecto: 8×8. */
+export const DEFAULT_GARDEN_SIZE = GRID_COLS
+
 /** Espacio sobre la grilla para que el árbol de la fila de atrás no se corte. */
 export const TOP_PADDING = TREE_SPRITE_HEIGHT
 

@@ -24,7 +24,13 @@ import {
   wheelZoomStep,
 } from '@/logic/zoom'
 import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
-import { loadAtlas, loadGroundTile, SPRITES_ENABLED, type Atlas } from '@/render/sprites'
+import {
+  GROUND_TILE_SIZES,
+  loadAtlas,
+  loadGroundTile,
+  SPRITES_ENABLED,
+  type Atlas,
+} from '@/render/sprites'
 import type { Tree } from '@/state/types'
 import { MinusIcon, PlusIcon, ResetIcon } from './icons'
 
@@ -32,6 +38,8 @@ interface GardenCanvasProps {
   trees: readonly Tree[]
   active: ActiveTreePreview | null
   label: string
+  /** Tamaño del bosque en celdas por lado; 8×8 por defecto. */
+  gardenSize: number
 }
 
 interface DragState {
@@ -48,7 +56,7 @@ const NO_DRAG_SELECTOR =
 /** Diferencia entre el centro visual del diorama y el centro de la escena. */
 const MAP_CENTER_OFFSET_Y = TOP_PADDING + (GRID_PIXEL_HEIGHT + ISLAND_DEPTH) / 2 - SCENE_HEIGHT / 2
 
-export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
+export function GardenCanvas({ trees, active, label, gardenSize }: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gardenRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -56,18 +64,18 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
   const wheelZoomRef = useRef(DEFAULT_ZOOM)
   const wheelAccumulatorRef = useRef(0)
   const [atlas, setAtlas] = useState<Atlas | null>(null)
-  const [groundTile, setGroundTile] = useState<HTMLImageElement | null>(null)
+  const [groundTiles, setGroundTiles] = useState<Record<number, HTMLImageElement | null>>({})
   // Se pinta el jardín solo cuando los sprites terminaron de cargar:
   // así no se ven los placeholders antes de tiempo.
   const [spritesReady, setSpritesReady] = useState(!SPRITES_ENABLED)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [panRatio, setPanRatio] = useState<PanOffset>({ x: 0, y: 0 })
-  const [gardenSize, setGardenSize] = useState({ width: 0, height: 0 })
+  const [gardenBox, setGardenBox] = useState({ width: 0, height: 0 })
   const dpr = typeof window === 'undefined' ? 1 : Math.max(1, window.devicePixelRatio || 1)
 
-  const hasGardenSize = gardenSize.width > 0 && gardenSize.height > 0
+  const hasGardenSize = gardenBox.width > 0 && gardenBox.height > 0
   const idealBaseScale = hasGardenSize
-    ? Math.min((gardenSize.width * dpr) / SCENE_WIDTH, (gardenSize.height * dpr) / SCENE_HEIGHT)
+    ? Math.min((gardenBox.width * dpr) / SCENE_WIDTH, (gardenBox.height * dpr) / SCENE_HEIGHT)
     : 1
   const basePixelScale = fitPixelScale(idealBaseScale)
   // No bajamos de 1:1 salvo que el propio contenedor sea más chico que la
@@ -91,8 +99,8 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     zoom,
     canvasCssWidth,
     canvasCssHeight,
-    gardenSize.width,
-    gardenSize.height,
+    gardenBox.width,
+    gardenBox.height,
   )
   const pan = useMemo(
     () => ({
@@ -112,13 +120,21 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     }
 
     let cancelled = false
-    Promise.all([loadAtlas(), loadGroundTile()]).then(([loadedAtlas, loadedTile]) => {
-      if (!cancelled) {
+    Promise.all([loadAtlas(), ...GROUND_TILE_SIZES.map((size) => loadGroundTile(size))]).then(
+      ([loadedAtlas, ...tiles]) => {
+        if (cancelled) {
+          return
+        }
+
+        const bySize: Record<number, HTMLImageElement | null> = {}
+        GROUND_TILE_SIZES.forEach((size, index) => {
+          bySize[size] = tiles[index] ?? null
+        })
         setAtlas(loadedAtlas)
-        setGroundTile(loadedTile)
+        setGroundTiles(bySize)
         setSpritesReady(true)
-      }
-    })
+      },
+    )
 
     return () => {
       cancelled = true
@@ -135,7 +151,7 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
     // grande y se centra sin afectar el layout.
     const updateSize = () => {
       const rect = garden.getBoundingClientRect()
-      setGardenSize((current) =>
+      setGardenBox((current) =>
         current.width === rect.width && current.height === rect.height
           ? current
           : { width: rect.width, height: rect.height },
@@ -173,8 +189,15 @@ export function GardenCanvas({ trees, active, label }: GardenCanvasProps) {
       return
     }
 
-    drawGarden(ctx, { trees, active, atlas, groundTile })
-  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTile, spritesReady])
+    // Cada tamaño tiene su propio sheet precargado; todos miden 487×270.
+    drawGarden(ctx, {
+      trees,
+      active,
+      atlas,
+      groundTile: groundTiles[gardenSize] ?? null,
+      gardenSize,
+    })
+  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTiles, spritesReady, gardenSize])
 
   useEffect(() => {
     const garden = gardenRef.current

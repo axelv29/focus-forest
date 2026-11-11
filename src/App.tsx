@@ -71,6 +71,7 @@ function App() {
   }, [active])
 
   const settings = useStore((state) => state.settings)
+  const devGardenSize = useStore((state) => state.devGardenSize)
   const prevActiveRef = useRef(active)
   const withered = trees.filter((tree) => tree.state === 'withered').length
 
@@ -140,7 +141,7 @@ function App() {
         {view === 'garden' || inSession ? (
           <div className="relative w-full">
             <div className="relative mx-auto w-full max-w-[1024px]">
-              <GardenCanvas trees={trees} active={activePreview} label={label} />
+              <GardenCanvas trees={trees} active={activePreview} label={label} gardenSize={devGardenSize} />
             </div>
 
             {active?.kind === 'focus' && (
