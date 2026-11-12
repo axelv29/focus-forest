@@ -311,33 +311,37 @@
     overscroll-behavior: contain;
     margin-right: -0.35rem;
     padding-right: 0.35rem;
+  }
+
+  /* Scrollbar delicado compartido: invisible salvo con el puntero cerca del
+     borde derecho. `is-scrollbar-visible` lo agrega useEdgeScrollbar. */
+  .edge-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
   }
 
-  /* El scrollbar se muestra solo con el mouse cerca del borde del panel. */
-  .settings-panel.is-scrollbar-visible {
+  .edge-scrollbar.is-scrollbar-visible {
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
-  .settings-panel::-webkit-scrollbar {
+  .edge-scrollbar::-webkit-scrollbar {
     width: var(--scrollbar-size);
   }
 
-  .settings-panel::-webkit-scrollbar-track {
+  .edge-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .settings-panel::-webkit-scrollbar-thumb {
+  .edge-scrollbar::-webkit-scrollbar-thumb {
     border-radius: var(--radius-pill);
     background-color: transparent;
   }
 
-  .settings-panel.is-scrollbar-visible::-webkit-scrollbar-thumb {
+  .edge-scrollbar.is-scrollbar-visible::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-thumb);
   }
 
-  .settings-panel.is-scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  .edge-scrollbar.is-scrollbar-visible::-webkit-scrollbar-thumb:hover {
     background-color: var(--scrollbar-thumb-hover);
   }
 
@@ -1139,7 +1143,9 @@
     background-color: transparent;
     color: var(--palette-muted);
     cursor: pointer;
-    transition: background-color var(--motion-normal) ease, color var(--motion-normal) ease;
+    transition:
+      background-color var(--motion-normal) ease,
+      color var(--motion-normal) ease;
   }
 
   .forest-countdown__button:hover,
@@ -1176,7 +1182,9 @@
     opacity: 0;
     transform: translateY(-50%) translateX(-4px);
     pointer-events: none;
-    transition: opacity var(--motion-normal) ease, transform var(--motion-normal) ease;
+    transition:
+      opacity var(--motion-normal) ease,
+      transform var(--motion-normal) ease;
   }
 
   .forest-countdown:hover .forest-countdown__tip,
@@ -2152,6 +2160,7 @@
     .garden-left-rail {
       max-height: calc(100vh - 2rem);
       overflow-y: auto;
+      overscroll-behavior: contain;
       scrollbar-gutter: stable;
     }
   }
@@ -2186,10 +2195,6 @@
   .history-panel__summary {
     margin: 0;
     font-variant-numeric: tabular-nums;
-  }
-
-  .history-panel__list {
-    max-height: min(46vh, 22rem);
   }
 
   .history-filters {
@@ -2230,9 +2235,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.28rem;
-    max-height: min(58vh, 34rem);
-    overflow-y: auto;
-    padding-right: 0.15rem;
   }
 
   .history-row {

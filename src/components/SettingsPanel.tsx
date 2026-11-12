@@ -1,6 +1,7 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useState } from 'react'
 import { playTone } from '@/logic/alarm'
 import { getNotificationPermission, requestNotificationPermission } from '@/logic/notifications'
+import { useEdgeScrollbar } from '@/hooks/useEdgeScrollbar'
 import type { AlarmTone, PomodoroSettings } from '@/state/types'
 import { availableFocusMinutes } from '@/config/species'
 import { BackIcon, VolumeIcon } from './icons'
@@ -51,26 +52,13 @@ const TONE_OPTIONS = (Object.keys(TONE_LABELS) as AlarmTone[]).map((tone) => ({
 }))
 
 /** Cuando el mouse entra en la zona del borde, el scrollbar se hace visible. */
-const SCROLLBAR_EDGE_HINT = 28
-
 export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps) {
   const [permission, setPermission] = useState(getNotificationPermission())
-  const [scrollbarNearEdge, setScrollbarNearEdge] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
+  const scrollbar = useEdgeScrollbar<HTMLDivElement>()
 
   const handleRequestPermission = async () => {
     const result = await requestNotificationPermission()
     setPermission(result)
-  }
-
-  const handlePanelPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const panel = panelRef.current
-    if (!panel) {
-      return
-    }
-
-    const rect = panel.getBoundingClientRect()
-    setScrollbarNearEdge(rect.right - event.clientX <= SCROLLBAR_EDGE_HINT)
   }
 
   const handleReset = () => {
@@ -91,10 +79,9 @@ export function SettingsPanel({ settings, onChange, onBack }: SettingsPanelProps
 
   return (
     <div
-      ref={panelRef}
-      onPointerMove={handlePanelPointerMove}
-      onPointerLeave={() => setScrollbarNearEdge(false)}
-      className={`settings-panel flex flex-col gap-4${scrollbarNearEdge ? ' is-scrollbar-visible' : ''}`}
+      onPointerMove={scrollbar.onPointerMove}
+      onPointerLeave={scrollbar.onPointerLeave}
+      className={`settings-panel edge-scrollbar flex flex-col gap-4${scrollbar.nearEdge ? ' is-scrollbar-visible' : ''}`}
     >
       <div className="flex items-center gap-2">
         <button

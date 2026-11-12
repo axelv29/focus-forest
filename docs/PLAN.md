@@ -112,7 +112,7 @@ Las opciones, comparadas:
 - **Sesión planificada (`SessionPlan`):** título, descripción, objetivos y uno o varios pomodoros (hasta 8). Cada pomodoro copia esos datos y guarda `planId`, `pomoIndex` y `pomoTotal` en su `FocusRecord`; los árboles de la serie no se fuerzan adyacentes.
 - **Iniciar:** abre un diálogo con nombre, descripción, objetivos y modo “Un pomodoro” / “Varios pomodoros”, con contador y resumen de minutos, pausas y árboles. Si no hay bosque, primero se crea uno.
 - **Serie pendiente:** tras completar un pomodoro intermedio, el timer ofrece continuar la serie o empezar otra; empezar otra cierra la anterior. Abandonar cierra la serie completa.
-- **Historial por bosque:** ventana flotante con filtros Todas, Hoy, Esta semana, Series y Marchitas; agrupa los pomodoros por sesión, muestra fecha, minutos, estado y árboles (incluidos los marchitos). La lista tiene scroll propio y se apila debajo de la tarjeta de sesión en la columna izquierda. La tarjeta de detalle replica la de la sesión activa y agrega fecha de fin, total de enfoque y estado.
+- **Historial por bosque:** ventana flotante con filtros Todas, Hoy, Esta semana, Series y Marchitas; agrupa los pomodoros por sesión, muestra fecha, minutos, estado y árboles (incluidos los marchitos). La lista no tiene scroll propio: se apila dentro de la columna izquierda, que es la única que scrollea, con una barra delicada visible solo al acercar el puntero al borde derecho. La tarjeta de detalle replica la de la sesión activa y agrega fecha de fin, total de enfoque y estado.
 - **Selección en la pradera:** elegir una sesión (en el historial o con doble clic en un árbol/celda) muestra todos sus árboles a opacidad normal y atenúa el resto; la cámara se centra una vez en la selección. No modifica timer, árboles ni datos.
 
 ### Después
@@ -273,7 +273,7 @@ Modo oscuro: fuera de la v0.1. Fondo #203f3b con texto #e9edd0, para más adelan
 ### Composición de la pantalla
 
 - **Escritorio:** diorama de 960×800 centrado (2× de la escena 480×400), con la tarjeta de sesión a la izquierda y el timer a la derecha. Las tarjetas se anclan a 16 px de los bordes de la ventana y crecen con el ancho de la pantalla; el timer es más ancho que la tarjeta de sesión. La pradera es el centro; los paneles no compiten con ella.
-- **Historial:** ventana flotante en la columna izquierda, debajo de la tarjeta de sesión, con filtros y lista de scroll propio; el detalle de la sesión aparece en la misma columna. En pantallas chicas la columna pasa al flujo normal sobre el timer.
+- **Historial:** ventana flotante en la columna izquierda, debajo de la tarjeta de sesión, con filtros y la lista apilada; la columna es el único contenedor con scroll. El detalle de la sesión aparece en la misma columna. En pantallas chicas la columna pasa al flujo normal sobre el timer.
 - **Durante una sesión:** el selector de vistas se deshabilita; vuelve a aparecer la tarjeta de sesión con el crecimiento en vivo, y timer, pausa y abandonar siguen a mano.
 - **Mobile:** fuera del alcance de la v0.1. La app no debe romperse a 360 px, pero el layout completo se diseña después. Una pradera isométrica 2:1 es una banda ancha; no puede ocupar el 80 % de una pantalla vertical sin recortar o hacer zoom.
 - **Lenguaje amable:** nada de mensajes de castigo; al abandonar, un aviso sereno.

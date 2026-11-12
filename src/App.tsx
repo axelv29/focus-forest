@@ -16,6 +16,7 @@ import { StorageNotice } from '@/components/StorageNotice'
 import { TimerPanel } from '@/components/TimerPanel'
 import type { View } from '@/config/views'
 import { useCountdown } from '@/hooks/useCountdown'
+import { useEdgeScrollbar } from '@/hooks/useEdgeScrollbar'
 import { stageForElapsedMs } from '@/logic/growth'
 import { elapsedMs } from '@/logic/timer'
 import { playTone } from '@/logic/alarm'
@@ -60,6 +61,7 @@ function App() {
   const [pendingSessionAfterForest, setPendingSessionAfterForest] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const leftRail = useEdgeScrollbar<HTMLDivElement>()
 
   const currentForestId = active?.kind === 'focus' ? active.forestId : activeForestId
   const activeForest = selectActiveForest(forests, currentForestId)
@@ -280,8 +282,7 @@ function App() {
   const showConfirm = active !== null && active.kind === 'focus' && confirmRequest?.id === active.id
   const confirmMode = confirmRequest?.mode ?? 'abandon'
 
-  const scrollableView =
-    !inSession && (view === 'forests' || view === 'stats')
+  const scrollableView = !inSession && (view === 'forests' || view === 'stats')
 
   return (
     <div
@@ -302,9 +303,7 @@ function App() {
                 {activeForest.name}
               </span>
             )}
-            {display.showCountdown && countdown && (
-              <ForestCountdown countdown={countdown} />
-            )}
+            {display.showCountdown && countdown && <ForestCountdown countdown={countdown} />}
           </div>
         )}
       </header>
@@ -343,7 +342,11 @@ function App() {
               />
             </div>
 
-            <div className="garden-left-rail relative z-10 mx-auto mt-4 flex w-full max-w-sm flex-col gap-3 px-4 min-[768px]:absolute min-[768px]:left-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(200px,16vw,300px)] min-[768px]:px-0">
+            <div
+              onPointerMove={leftRail.onPointerMove}
+              onPointerLeave={leftRail.onPointerLeave}
+              className={`garden-left-rail edge-scrollbar relative z-10 mx-auto mt-4 flex w-full max-w-sm flex-col gap-3 px-4 min-[768px]:absolute min-[768px]:left-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(200px,16vw,300px)] min-[768px]:px-0${leftRail.nearEdge ? ' is-scrollbar-visible' : ''}`}
+            >
               {active?.kind === 'focus' && <SessionCard now={now} />}
 
               {!active && selectedEntry && activeForest && (
