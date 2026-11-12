@@ -86,15 +86,23 @@ Los tokens `--button-*` controlan borde, padding, radio, sombra y colores. Los e
 
 ### 5. Otros elementos
 
-- `.timer-ring`, `.timer-ring__track`, `.timer-ring__fill`, `.timer-ring__tip`, `.timer-ring__time`, `.timer-ring__caption` — anillo del temporizador. Su degradado verde es el único degradado sancionado del tema.
+- `.timer-ring`, `.timer-ring__track`, `.timer-ring__fill`, `.timer-ring__tip`, `.timer-ring__pomo`, `.timer-ring__time`, `.timer-ring__caption` — anillo del temporizador. `.timer-ring__pomo` muestra la posición de la serie (por ejemplo `3/5`) arriba del reloj. Su degradado verde es el único degradado sancionado del tema.
 - `.view-switch`, `.view-switch__button` — selector Bosque / Estadísticas / Bosques; se deshabilita durante una sesión activa.
+- `.timer-history-button` — botón discreto del historial en la tarjeta del timer; se marca con `aria-pressed` cuando la ventana está abierta.
 - `.forest-switcher`, `.forest-switcher__list`, `.forest-switcher__create`, `.forest-row`, `.forest-row__name`, `.forest-row__description`, `.forest-row__meta`, `.forest-switcher__empty` — listado de bosques.
-- `.stage-track` y sus modificadores `--done`, `--current`, `--upcoming` — línea de etapas de la tarjeta de sesión.
+- `.stage-track` y sus modificadores `--done`, `--current`, `--upcoming` — línea de etapas de la tarjeta de sesión. `--detail` la ajusta en el detalle del historial.
 - `.session-data` y sus filas — datos de la sesión.
+- `.session-resume`, `.session-resume__title` — serie pendiente en el panel del timer.
+- `.session-card__description`, `.session-card__tasks` — descripción y objetivos de la sesión activa.
+- `.session-objectives`, `.session-objective`, `.session-add-task` — lista editable de objetivos del diálogo de sesión.
+- `.session-mode`, `.session-mode__option` (estado con `aria-pressed`), `.session-count` — elección de uno o varios pomodoros y su contador.
+- `.session-preview`, `.session-preview__scene`, `.session-preview__trees`, `.session-preview__tree`, `.session-preview__ground`, `.session-preview__note` — resumen visual de la serie en el diálogo.
+- `.session-detail` y sus partes (`__head`, `__tree`, `__description`, `__tasks`, `__trees`, `__tree-chip`, `__back`) — tarjeta de una sesión pasada; usa `.card--session` y la misma gramática que la tarjeta activa.
+- `.garden-left-rail`, `.history-panel`, `.history-panel__head`, `.history-panel__title`, `.history-panel__close`, `.history-panel__summary`, `.history-panel__list`, `.history-filters`, `.history-filter` (estado con `aria-pressed`), `.history-list`, `.history-row` (estado `.is-selected`), `.history-empty` — ventana flotante del historial: columna izquierda con scroll en desktop, filtros y lista con scroll propio.
 - `.toast--success`, `.toast--warning`, `.toast--info` — tono de los avisos. El tono se elige en `CompletionToast.tsx` solo por nombre de clase.
 - `.dialog-backdrop` — fondo del diálogo de confirmación y del diálogo de creación de bosque.
 - `.forest-header`, `.forest-header__name`, `.forest-countdown` (`--active`, `--past`), `.forest-countdown__button`, `.forest-countdown__tip`, `.forest-countdown__bubble` — nombre del bosque y calendario discreto de días restantes (toggle al click/tap, tooltip al hover/focus).
-- `.forest-welcome`, `.forest-welcome__icon`, `.forest-welcome__copy` — tarjeta de bienvenida para crear el primer bosque.
+- `.forest-welcome`, `.forest-welcome__icon`, `.forest-welcome__copy` — tarjeta de bienvenida para crear un bosque cuando no queda ninguno.
 - `.forest-dialog` y sus partes, `.forest-field`, `.field-input`, `.field-textarea`, `.forest-check`, `.forest-date-row`, `.forest-goal`, `.forest-form__error` — formulario de creación.
 - `.forest-preview` y sus partes, `.forest-preview-canvas` — vista previa con el atlas real.
 - `.date-field` y `.date-popover` con `.date-day` (`--selected`, `--today`, `--disabled`, `--blank`) — calendario propio, no el control nativo.

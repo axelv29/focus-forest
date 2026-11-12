@@ -1,5 +1,6 @@
 import { ForestCountdown } from './ForestCountdown'
 import { useState } from 'react'
+import { History } from 'lucide-react'
 import { ArchiveIcon, PencilIcon, PlusIcon, TrashIcon, UnarchiveIcon } from './icons'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ForestPreviewCanvas } from './ForestPreviewCanvas'
@@ -15,6 +16,7 @@ interface ForestSwitcherProps {
   view: View
   onChangeView: (view: View) => void
   onSelect: (id: string) => void
+  onHistoryForest: (id: string) => void
   onCreateForest: () => void
   onEditForest: (forest: Forest) => void
 }
@@ -25,6 +27,7 @@ interface ForestCardProps {
   isActive: boolean
   isArchived: boolean
   onSelect: (id: string) => void
+  onHistory: (id: string) => void
   onEdit: (forest: Forest) => void
   onArchiveToggle: (forest: Forest) => void
   onDelete: (forest: Forest) => void
@@ -36,6 +39,7 @@ function ForestCard({
   isActive,
   isArchived,
   onSelect,
+  onHistory,
   onEdit,
   onArchiveToggle,
   onDelete,
@@ -83,6 +87,15 @@ function ForestCard({
         <button
           type="button"
           className="icon-button"
+          onClick={() => onHistory(forest.id)}
+          aria-label={`Ver historial del bosque ${forest.name}`}
+          title="Historial"
+        >
+          <History />
+        </button>
+        <button
+          type="button"
+          className="icon-button"
           onClick={() => onEdit(forest)}
           aria-label={`Editar bosque ${forest.name}`}
           title="Editar"
@@ -120,6 +133,7 @@ export function ForestSwitcher({
   view,
   onChangeView,
   onSelect,
+  onHistoryForest,
   onCreateForest,
   onEditForest,
 }: ForestSwitcherProps) {
@@ -201,6 +215,7 @@ export function ForestSwitcher({
                     isActive={forest.id === activeForestId}
                     isArchived={false}
                     onSelect={onSelect}
+                    onHistory={onHistoryForest}
                     onEdit={onEditForest}
                     onArchiveToggle={handleArchiveToggle}
                     onDelete={setDeleteTarget}
@@ -228,6 +243,7 @@ export function ForestSwitcher({
                     isActive={forest.id === activeForestId}
                     isArchived
                     onSelect={onSelect}
+                    onHistory={onHistoryForest}
                     onEdit={onEditForest}
                     onArchiveToggle={handleArchiveToggle}
                     onDelete={setDeleteTarget}

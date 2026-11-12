@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { History } from 'lucide-react'
 import { FOCUS_MINUTES } from '@/config/timer'
 import type { View } from '@/config/views'
 import { elapsedMs, remainingMs } from '@/logic/timer'
@@ -15,7 +16,10 @@ interface TimerPanelProps {
   onChangeView: (view: View) => void
   onAbandonRequest: () => void
   onStrictPauseRequest: () => void
-  onCreateForest: () => void
+  onStartSession: () => void
+  onContinueSession: () => void
+  historyOpen: boolean
+  onToggleHistory: () => void
 }
 
 export function TimerPanel({
@@ -24,15 +28,19 @@ export function TimerPanel({
   onChangeView,
   onAbandonRequest,
   onStrictPauseRequest,
-  onCreateForest,
+  onStartSession,
+  onContinueSession,
+  historyOpen,
+  onToggleHistory,
 }: TimerPanelProps) {
   const active = useStore((state) => state.active)
   const sessions = useStore((state) => state.sessions)
   const trees = useStore((state) => state.trees)
   const forests = useStore((state) => state.forests)
   const activeForestId = useStore((state) => state.activeForestId)
+  const activePlanId = useStore((state) => state.activePlanId)
+  const plans = useStore((state) => state.plans)
   const settings = useStore((state) => state.settings)
-  const startFocus = useStore((state) => state.startFocus)
   const pause = useStore((state) => state.pause)
   const resume = useStore((state) => state.resume)
   const skipBreak = useStore((state) => state.skipBreak)
@@ -40,6 +48,12 @@ export function TimerPanel({
   const forestId = active?.kind === 'focus' ? active.forestId : activeForestId
   const activeForest = selectActiveForest(forests, forestId)
   const stats = selectStats(sessions, trees, now, activeForest?.id)
+  const openPlan = plans.find(
+    (plan) => plan.id === activePlanId && plan.finishedAt === null,
+  )
+  const planForest = openPlan
+    ? selectActiveForest(forests, openPlan.forestId)
+    : null
   const [showSettings, setShowSettings] = useState(false)
 
   const isPaused = active?.pausedAt !== null && active?.pausedAt !== undefined
@@ -55,6 +69,12 @@ export function TimerPanel({
     active && isPaused && toleranceMs > 0
       ? Math.max(0, toleranceMs - (active.pausedMs + (now - (active.pausedAt ?? now))))
       : null
+  const pomoProgress =
+    active?.pomoIndex && active.pomoTotal
+      ? { index: active.pomoIndex, total: active.pomoTotal }
+      : openPlan
+        ? { index: openPlan.completedPomodoros + 1, total: openPlan.targetPomodoros }
+        : null
 
   const handlePause = () => {
     if (isPaused) {
@@ -102,28 +122,52 @@ export function TimerPanel({
             durationMin={active?.durationMin ?? focusMin}
             paused={isPaused}
             toleranceRemainingMs={toleranceRemainingMs}
+            pomoProgress={pomoProgress}
           />
 
           <div className="timer-today">
-            <span>Pomodoros hoy</span>
-            <strong>{stats.todayPomodoros}</strong>
+            <span>
+              Pomodoros hoy <strong>{stats.todayPomodoros}</strong>
+            </span>
+            <button
+              type="button"
+              className="icon-button timer-history-button"
+              onClick={onToggleHistory}
+              aria-label={historyOpen ? 'Cerrar historial' : 'Abrir historial'}
+              aria-pressed={historyOpen}
+              title="Historial"
+            >
+              <History />
+            </button>
           </div>
+
+          {!active && openPlan && (
+            <div className="session-resume">
+              <p className="eyebrow">Sesión pendiente</p>
+              <p className="type-title session-resume__title">{openPlan.title}</p>
+              <p className="type-micro type-muted">
+                {openPlan.completedPomodoros} de {openPlan.targetPomodoros} pomodoros
+                {planForest ? ` · ${planForest.name}` : ''}
+              </p>
+            </div>
+          )}
 
           <div className="timer-actions">
             {!active && (
               <button
                 type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  if (!activeForest) {
-                    onCreateForest()
-                    return
-                  }
-                  startFocus(now)
-                }}
+                className={openPlan ? 'btn btn-secondary' : 'btn btn-primary'}
+                onClick={onStartSession}
               >
                 <PlayIcon />
-                Iniciar
+                {openPlan ? 'Nueva sesión' : 'Iniciar'}
+              </button>
+            )}
+
+            {!active && openPlan && (
+              <button type="button" className="btn btn-primary" onClick={onContinueSession}>
+                <PlayIcon />
+                Continuar
               </button>
             )}
 

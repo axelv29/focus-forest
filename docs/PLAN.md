@@ -92,7 +92,8 @@ Las opciones, comparadas:
 - **Pradera:** grilla isométrica de 4×4 a 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante. La escala base es común a todos los tamaños; los bosques chicos se ven proporcionalmente más chicos y se pueden acercar con el zoom.
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.
-- **Interfaz:** vista Bosque y vista Estadísticas, con el selector dentro de la tarjeta del timer. La tarjeta de sesión queda visible durante el enfoque (también en pausa) y se oculta en descanso. El selector se deshabilita mientras hay una sesión activa; timer, pausa y abandonar siguen a mano.
+- **Sesiones e historial:** una sesión puede ser un pomodoro o una serie de hasta 8 con nombre, descripción y objetivos. El historial del bosque agrupa los pomodoros de cada serie, incluye árboles marchitos y filtros por hoy, semana, series y marchitas.
+- **Interfaz:** vistas Bosque, Estadísticas y Bosques, con el selector dentro de la tarjeta del timer. El historial es una ventana flotante que se abre desde un botón discreto del timer y se apila bajo la tarjeta de sesión. La tarjeta de sesión queda visible durante el enfoque (también en pausa) y se oculta en descanso. El selector se deshabilita mientras hay una sesión activa; timer, pausa y abandonar siguen a mano. Iniciar abre el diálogo de sesión; la pradera permite seleccionar una sesión con doble clic para resaltar sus árboles.
 - **Zoom de la pradera:** control de vista de 0.5× a 2×, centrado y sin persistencia, con tres botones flotantes (acercar, alejar, restablecer) y rueda del mouse. No hay slider ni porcentaje visible. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son pixel-perfect estrictos porque usan escalas enteras de origen. No hay intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1× para no perder píxeles; en pantallas muy chicas la escala base puede ser 0.5×. No cambia el timer, los árboles ni las estadísticas.
 
 - **Arrastre de la pradera:** con un clic izquierdo normal se puede mover el mapa desde cualquier zona libre de la página, sin cambiar el cursor. El diorama se centra verticalmente y los límites se miden simétricamente desde ese centro. El recorrido base escala con el zoom y suma el desborde del canvas más 80 px de margen: en desktop, unos 80 px a los lados al 50 %, 150 px al 100 %, 289 px al 150 % y 529 px al 200 % (vertical: 85, 170, 255 y 454 px). La posición se guarda como fracción del límite para conservarse proporcional al zoomear. El botón de retícula restablece el zoom y recentra. El arrastre no modifica el timer, los árboles ni el store.
@@ -100,11 +101,19 @@ Las opciones, comparadas:
 ### Bosques: implementado en esta etapa
 
 - **Entidad `Forest`:** nombre, descripción opcional, tamaño 4×4–8×8, fecha de fin opcional, meta de horas opcional y archivado futuro. Árboles, sesiones y sesión activa llevan `forestId`.
-- **Persistencia V3:** migración de datos viejos a un bosque “Mi bosque” 8×8; sin datos viejos no se crea un bosque falso. El estado inicial muestra la pradera 8×8 de fondo con la tarjeta de bienvenida.
+- **Persistencia V4:** migración de datos viejos a un bosque “Mi bosque” 8×8; sin datos viejos no se crea un bosque falso. El estado inicial muestra la pradera 8×8 de fondo con la tarjeta de bienvenida. V4 agrega las sesiones planificadas.
 - **Creación:** diálogo con nombre, descripción, tamaño en un select con capacidad, fecha opcional con calendario propio y contador, meta de horas y vista previa con el atlas real. Se abre desde la bienvenida o desde Iniciar si todavía no hay bosque.
 - **Identidad visible:** la cabecera muestra el nombre del bosque y el contador de días. Los toggles para ocultarlos ya existen en el modelo (`display`) y se conectarán en Ajustes.
 - **Estadísticas por bosque:** el timer, la tarjeta de sesión y Estadísticas filtran por el bosque activo; Estadísticas muestra totales globales cuando hay más de un bosque.
-- **Pendiente de esta serie:** edición/archivado/eliminación de bosques, toggles de nombre/contador en Ajustes, historial por bosque y vista por período (mes/semana/año). El cambio de bosque (vista Bosques) quedó implementado.
+- **Pendiente de esta serie:** toggles de nombre/contador en Ajustes y vista por período (mes/semana/año). Edición, archivado, eliminación, cambio de bosque e historial por bosque ya están implementados.
+
+### Sesiones e historial: implementado en esta etapa
+
+- **Sesión planificada (`SessionPlan`):** título, descripción, objetivos y uno o varios pomodoros (hasta 8). Cada pomodoro copia esos datos y guarda `planId`, `pomoIndex` y `pomoTotal` en su `FocusRecord`; los árboles de la serie no se fuerzan adyacentes.
+- **Iniciar:** abre un diálogo con nombre, descripción, objetivos y modo “Un pomodoro” / “Varios pomodoros”, con contador y resumen de minutos, pausas y árboles. Si no hay bosque, primero se crea uno.
+- **Serie pendiente:** tras completar un pomodoro intermedio, el timer ofrece continuar la serie o empezar otra; empezar otra cierra la anterior. Abandonar cierra la serie completa.
+- **Historial por bosque:** ventana flotante con filtros Todas, Hoy, Esta semana, Series y Marchitas; agrupa los pomodoros por sesión, muestra fecha, minutos, estado y árboles (incluidos los marchitos). La lista tiene scroll propio y se apila debajo de la tarjeta de sesión en la columna izquierda. La tarjeta de detalle replica la de la sesión activa y agrega fecha de fin, total de enfoque y estado.
+- **Selección en la pradera:** elegir una sesión (en el historial o con doble clic en un árbol/celda) muestra todos sus árboles a opacidad normal y atenúa el resto; la cámara se centra una vez en la selección. No modifica timer, árboles ni datos.
 
 ### Después
 
@@ -145,6 +154,7 @@ focus-forest/
       grid.ts              8×8, celda 60×30, escena 480×400
       timer.ts             25 y 5 minutos
       growth.ts            umbrales 0/5/15/25
+      session.ts           límites de sesión (título, objetivos, pomodoros)
       zoom.ts              0.5×–2×, escalas enteras y formato
     state/
       types.ts             forma de los datos
@@ -155,19 +165,23 @@ focus-forest/
       timer.ts             restante, pausa, reanudar, vencimiento
       growth.ts            minutos → etapa
       stats.ts             hoy y totales
+      history.ts           agrupación y filtros del historial
       placement.ts         siguiente celda libre aleatoria, sin espaciamiento
       day.ts               día local
       zoom.ts              límites, escala base entera, niveles enteros y formato
     render/
-      iso.ts               de celda a pantalla y orden de dibujo
-      sprites.ts           carga de los atlas de pino y dibujo de frames
-      drawGarden.ts        dibuja la pradera y los árboles a la escala resuelta
+      iso.ts               de celda a pantalla, orden de dibujo y celda por punto
+      sprites.ts           carga de los atlas y dibujo/medición de frames
+      drawGarden.ts        dibuja la pradera, los árboles y la selección
     hooks/
       useCountdown.ts      tick de 0.5 s para la interfaz
     components/
-      GardenCanvas.tsx     canvas, pista de inicio y control de zoom
-      TimerPanel.tsx       timer y botones
+      GardenCanvas.tsx     canvas, arrastre, zoom, doble clic y selección
+      TimerPanel.tsx       timer, botones e inicio de sesión
       SessionCard.tsx      tarjeta de la sesión actual
+      SessionCreateDialog.tsx  diálogo de nueva sesión
+      SessionDetailCard.tsx    datos de una sesión pasada
+      HistoryPanel.tsx     ventana flotante con la lista y los filtros del historial
       StatsPanel.tsx       estadísticas
       BreakPrompt.tsx      oferta de descanso
       CompletionToast.tsx  aviso al completar
@@ -178,6 +192,9 @@ focus-forest/
       stats.test.ts
       placement.test.ts
       zoom.test.ts
+      history.test.ts
+      iso.test.ts
+      persist.test.ts
 ```
 
 ## 8. Puesta en marcha
@@ -256,6 +273,7 @@ Modo oscuro: fuera de la v0.1. Fondo #203f3b con texto #e9edd0, para más adelan
 ### Composición de la pantalla
 
 - **Escritorio:** diorama de 960×800 centrado (2× de la escena 480×400), con la tarjeta de sesión a la izquierda y el timer a la derecha. Las tarjetas se anclan a 16 px de los bordes de la ventana y crecen con el ancho de la pantalla; el timer es más ancho que la tarjeta de sesión. La pradera es el centro; los paneles no compiten con ella.
+- **Historial:** ventana flotante en la columna izquierda, debajo de la tarjeta de sesión, con filtros y lista de scroll propio; el detalle de la sesión aparece en la misma columna. En pantallas chicas la columna pasa al flujo normal sobre el timer.
 - **Durante una sesión:** el selector de vistas se deshabilita; vuelve a aparecer la tarjeta de sesión con el crecimiento en vivo, y timer, pausa y abandonar siguen a mano.
 - **Mobile:** fuera del alcance de la v0.1. La app no debe romperse a 360 px, pero el layout completo se diseña después. Una pradera isométrica 2:1 es una banda ancha; no puede ocupar el 80 % de una pantalla vertical sin recortar o hacer zoom.
 - **Lenguaje amable:** nada de mensajes de castigo; al abandonar, un aviso sereno.

@@ -1,6 +1,7 @@
 import { createJSONStorage, type StateStorage } from 'zustand/middleware'
 import { DEFAULT_FOREST_NAME, DEFAULT_FOREST_SIZE, FOREST_SIZES } from '@/config/forest'
 import { GRID_COLS, GRID_ROWS } from '@/config/grid'
+import { SESSION_MAX_POMODOROS } from '@/config/session'
 import { reportStorageIssue, useStorageStatus, type StorageIssue } from './storageStatus'
 import type {
   ActiveSession,
@@ -8,26 +9,43 @@ import type {
   DisplaySettings,
   FocusRecord,
   Forest,
-  PersistedV3,
+  PersistedV4,
   PomodoroSettings,
+  SessionPlan,
   Tree,
   TreeStage,
 } from './types'
 import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from './types'
 
 export const STORAGE_KEY = 'focus-forest'
-export const PERSIST_VERSION = 3
+export const PERSIST_VERSION = 4
 
 export const DEFAULT_FOREST_ID = 'forest-default'
 
-export function emptyState(): PersistedV3 {
+/** Bosque con el que arranca la app la primera vez. */
+export function createDefaultForest(createdAt = 0): Forest {
   return {
-    version: 3,
-    forests: [],
-    activeForestId: null,
+    id: DEFAULT_FOREST_ID,
+    name: DEFAULT_FOREST_NAME,
+    description: null,
+    size: DEFAULT_FOREST_SIZE,
+    createdAt,
+    endsOn: null,
+    goalHours: null,
+    archivedAt: null,
+  }
+}
+
+export function emptyState(): PersistedV4 {
+  return {
+    version: 4,
+    forests: [createDefaultForest()],
+    activeForestId: DEFAULT_FOREST_ID,
     trees: [],
     sessions: [],
+    plans: [],
     active: null,
+    activePlanId: null,
     settings: { ...DEFAULT_POMODORO_SETTINGS },
     display: { ...DEFAULT_DISPLAY_SETTINGS },
   }
@@ -71,6 +89,18 @@ function isDateKey(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
 }
 
+function isOptionalString(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === 'string'
+}
+
+function isOptionalPositiveInt(value: unknown): value is number | undefined {
+  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value > 0)
+}
+
+function isTaskList(value: unknown): value is string[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.every((task) => typeof task === 'string'))
+}
+
 function isTreeBase(value: unknown): value is Omit<Tree, 'forestId'> {
   return (
     isRecord(value) &&
@@ -96,7 +126,13 @@ function isFocusRecordBase(value: unknown): value is Omit<FocusRecord, 'forestId
     typeof value.durationMin === 'number' &&
     value.durationMin > 0 &&
     (value.status === 'completed' || value.status === 'abandoned') &&
-    typeof value.treeId === 'string'
+    typeof value.treeId === 'string' &&
+    isOptionalString(value.title) &&
+    isOptionalString(value.description) &&
+    isTaskList(value.tasks) &&
+    (value.planId === undefined || value.planId === null || typeof value.planId === 'string') &&
+    isOptionalPositiveInt(value.pomoIndex) &&
+    isOptionalPositiveInt(value.pomoTotal)
   )
 }
 
@@ -115,7 +151,13 @@ function isActiveSessionBase(value: unknown): value is Omit<ActiveSession, 'fore
     value.durationMin > 0 &&
     (value.pausedAt === null || typeof value.pausedAt === 'number') &&
     typeof value.pausedMs === 'number' &&
-    (value.cell === null || isCell(value.cell))
+    (value.cell === null || isCell(value.cell)) &&
+    (value.planId === undefined || value.planId === null || typeof value.planId === 'string') &&
+    isOptionalPositiveInt(value.pomoIndex) &&
+    isOptionalPositiveInt(value.pomoTotal) &&
+    isOptionalString(value.title) &&
+    isOptionalString(value.description) &&
+    isTaskList(value.tasks)
   )
 }
 
@@ -142,6 +184,29 @@ function isForest(value: unknown): value is Forest {
         Number.isFinite(value.goalHours) &&
         value.goalHours > 0)) &&
     (value.archivedAt === null || typeof value.archivedAt === 'number')
+  )
+}
+
+function isSessionPlan(value: unknown): value is SessionPlan {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.forestId === 'string' &&
+    typeof value.title === 'string' &&
+    value.title.trim().length > 0 &&
+    (value.description === null || typeof value.description === 'string') &&
+    Array.isArray(value.tasks) &&
+    value.tasks.every((task) => typeof task === 'string') &&
+    typeof value.targetPomodoros === 'number' &&
+    Number.isInteger(value.targetPomodoros) &&
+    value.targetPomodoros >= 1 &&
+    value.targetPomodoros <= SESSION_MAX_POMODOROS &&
+    typeof value.completedPomodoros === 'number' &&
+    Number.isInteger(value.completedPomodoros) &&
+    value.completedPomodoros >= 0 &&
+    value.completedPomodoros <= value.targetPomodoros &&
+    typeof value.createdAt === 'number' &&
+    (value.finishedAt === null || typeof value.finishedAt === 'number')
   )
 }
 
@@ -175,7 +240,7 @@ function isPomodoroSettings(value: unknown): value is PomodoroSettings {
 }
 
 /** Valida el estado completo; se usa al leer la versión actual. */
-export function isPersistedState(value: unknown): value is PersistedV3 {
+export function isPersistedState(value: unknown): value is PersistedV4 {
   return (
     isRecord(value) &&
     value.version === PERSIST_VERSION &&
@@ -186,7 +251,10 @@ export function isPersistedState(value: unknown): value is PersistedV3 {
     value.trees.every(isTree) &&
     Array.isArray(value.sessions) &&
     value.sessions.every(isFocusRecord) &&
+    Array.isArray(value.plans) &&
+    value.plans.every(isSessionPlan) &&
     (value.active === null || isActiveSession(value.active)) &&
+    (value.activePlanId === null || typeof value.activePlanId === 'string') &&
     isPomodoroSettings(value.settings) &&
     isDisplaySettings(value.display)
   )
@@ -226,7 +294,7 @@ function inferCreatedAt(
     ...(active ? [active.startedAt] : []),
   ]
 
-  return values.length > 0 ? Math.min(...values) : Date.now()
+  return values.length > 0 ? Math.min(...values) : 0
 }
 
 /**
@@ -234,7 +302,7 @@ function inferCreatedAt(
  * esperada. Los datos anteriores a la v3 se agrupan en un bosque inicial de
  * 8×8; los árboles huérfanos se recuperan en lugar de perderse.
  */
-export function migrate(persisted: unknown, _version: number): PersistedV3 {
+export function migrate(persisted: unknown, _version: number): PersistedV4 {
   const data = isRecord(persisted) ? persisted : {}
 
   const settings = isPomodoroSettings(data.settings)
@@ -266,41 +334,12 @@ export function migrate(persisted: unknown, _version: number): PersistedV3 {
   const activeRaw = isActiveSessionBase(data.active) ? data.active : null
   const legacyActive = activeRaw ? { ...activeRaw, forestId: rawForestId(activeRaw) } : null
 
-  const hasData =
-    legacyTrees.length > 0 || legacySessions.length > 0 || legacyActive?.kind === 'focus'
-
-  if (forests.length === 0 && hasData) {
-    forests.push({
-      id: DEFAULT_FOREST_ID,
-      name: DEFAULT_FOREST_NAME,
-      description: null,
-      size: DEFAULT_FOREST_SIZE,
-      createdAt: inferCreatedAt(legacyTrees, legacySessions, legacyActive),
-      endsOn: null,
-      goalHours: null,
-      archivedAt: null,
-    })
+  if (forests.length === 0) {
+    forests.push(createDefaultForest(inferCreatedAt(legacyTrees, legacySessions, legacyActive)))
   }
 
   const known = new Set(forests.map((forest) => forest.id))
-  let fallbackId =
-    forests.find((forest) => forest.archivedAt === null)?.id ?? forests[0]?.id ?? null
-
-  if (!fallbackId && hasData) {
-    const recovered: Forest = {
-      id: 'forest-recovered',
-      name: DEFAULT_FOREST_NAME,
-      description: null,
-      size: DEFAULT_FOREST_SIZE,
-      createdAt: inferCreatedAt(legacyTrees, legacySessions, legacyActive),
-      endsOn: null,
-      goalHours: null,
-      archivedAt: null,
-    }
-    forests.push(recovered)
-    known.add(recovered.id)
-    fallbackId = recovered.id
-  }
+  const fallbackId = forests.find((forest) => forest.archivedAt === null)?.id ?? forests[0]?.id ?? null
 
   const resolveForestId = (value: string | null): string | null =>
     value !== null && known.has(value) ? value : fallbackId
@@ -313,12 +352,29 @@ export function migrate(persisted: unknown, _version: number): PersistedV3 {
     const forestId = resolveForestId(session.forestId)
     return forestId ? [{ ...session, forestId }] : []
   })
+  const plans: SessionPlan[] = (Array.isArray(data.plans) ? data.plans : []).flatMap((value) => {
+    if (!isSessionPlan(value)) {
+      return []
+    }
+    const forestId = resolveForestId(value.forestId)
+    return forestId ? [{ ...value, forestId }] : []
+  })
+  const planIds = new Set(plans.map((plan) => plan.id))
   const active: ActiveSession | null = legacyActive
     ? {
         ...legacyActive,
         forestId: legacyActive.kind === 'focus' ? resolveForestId(legacyActive.forestId) : null,
+        planId:
+          typeof legacyActive.planId === 'string' && planIds.has(legacyActive.planId)
+            ? legacyActive.planId
+            : null,
       }
     : null
+  const activePlanId =
+    typeof data.activePlanId === 'string' &&
+    plans.some((plan) => plan.id === data.activePlanId && plan.finishedAt === null)
+      ? data.activePlanId
+      : null
 
   const savedActiveForestId =
     typeof data.activeForestId === 'string' && known.has(data.activeForestId)
@@ -327,12 +383,14 @@ export function migrate(persisted: unknown, _version: number): PersistedV3 {
   const activeForestId = active?.forestId ?? savedActiveForestId ?? fallbackId ?? null
 
   return {
-    version: 3,
+    version: 4,
     forests,
     activeForestId,
     trees,
     sessions,
+    plans,
     active,
+    activePlanId,
     settings,
     display,
   }
@@ -481,4 +539,4 @@ export function createSafeStorage(
 }
 
 export const safeStorage = createSafeStorage()
-export const persistStorage = createJSONStorage<PersistedV3>(() => safeStorage)
+export const persistStorage = createJSONStorage<PersistedV4>(() => safeStorage)

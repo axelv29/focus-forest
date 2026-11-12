@@ -47,6 +47,28 @@ export interface Tree {
   createdAt: number
 }
 
+/** Sesión planificada: uno o varios pomodoros con un mismo objetivo. */
+export interface SessionPlan {
+  id: string
+  forestId: string
+  title: string
+  description: string | null
+  tasks: string[]
+  /** Cantidad de pomodoros que dura la sesión (1–8). */
+  targetPomodoros: number
+  completedPomodoros: number
+  createdAt: number
+  /** Se cierra al completar el objetivo o al abandonar la sesión. */
+  finishedAt: number | null
+}
+
+export interface NewSessionInput {
+  title: string
+  description: string | null
+  tasks: string[]
+  targetPomodoros: number
+}
+
 export interface ActiveSession {
   id: string
   /** Solo los enfoques pertenecen a un bosque; los descansos no. */
@@ -65,6 +87,14 @@ export interface ActiveSession {
   pauseToleranceMin?: number
   /** v2: true para los descansos largos (distinto color en el anillo). */
   longBreak?: boolean
+  /** Sesión a la que pertenece este pomodoro. */
+  planId?: string | null
+  /** Posición del pomodoro dentro de la sesión (1-based). */
+  pomoIndex?: number
+  pomoTotal?: number
+  title?: string | null
+  description?: string | null
+  tasks?: string[]
 }
 
 export interface FocusRecord {
@@ -81,6 +111,10 @@ export interface FocusRecord {
   description?: string | null
   /** v2: tareas con checkboxes. */
   tasks?: string[]
+  /** Sesión planificada a la que pertenece el pomodoro. */
+  planId?: string | null
+  pomoIndex?: number
+  pomoTotal?: number
 }
 
 export interface PomodoroSettings {
@@ -147,6 +181,21 @@ export interface PersistedV3 {
   trees: Tree[]
   sessions: FocusRecord[]
   active: ActiveSession | null
+  settings: PomodoroSettings
+  display: DisplaySettings
+}
+
+/** v4: sesiones planificadas de uno o varios pomodoros. */
+export interface PersistedV4 {
+  version: 4
+  forests: Forest[]
+  activeForestId: string | null
+  trees: Tree[]
+  sessions: FocusRecord[]
+  plans: SessionPlan[]
+  active: ActiveSession | null
+  /** Sesión planificada que se puede continuar con el próximo pomodoro. */
+  activePlanId: string | null
   settings: PomodoroSettings
   display: DisplaySettings
 }

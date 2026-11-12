@@ -9,6 +9,8 @@ interface TimerRingProps {
   toleranceRemainingMs?: number | null
   /** Fase actual: enfoque, descanso corto o descanso largo. */
   variant?: 'focus' | 'shortBreak' | 'longBreak'
+  /** Posición dentro de una serie de pomodoros, por ejemplo 3/5. */
+  pomoProgress?: { index: number; total: number } | null
 }
 
 const RADIUS = 64
@@ -22,6 +24,7 @@ export function TimerRing({
   paused,
   toleranceRemainingMs = null,
   variant = 'focus',
+  pomoProgress = null,
 }: TimerRingProps) {
   const clamped = Math.min(1, Math.max(0, progress))
   const offset = CIRCUMFERENCE * (1 - clamped)
@@ -78,6 +81,11 @@ export function TimerRing({
       </svg>
 
       <div className="timer-ring__center">
+        {pomoProgress && pomoProgress.total > 1 && (
+          <span className="timer-ring__pomo">
+            {pomoProgress.index}/{pomoProgress.total}
+          </span>
+        )}
         <span className="timer-ring__time">{formatClock(remainingMs)}</span>
         <span className="timer-ring__caption">{paused ? 'en pausa' : `de ${durationMin} min`}</span>
         {paused && toleranceRemainingMs !== null && (

@@ -7,7 +7,14 @@ import {
   migrate,
 } from '@/state/persist'
 import type { StorageIssue } from '@/state/storageStatus'
-import type { ActiveSession, FocusRecord, Forest, PersistedV3, Tree } from '@/state/types'
+import type {
+  ActiveSession,
+  FocusRecord,
+  Forest,
+  PersistedV4,
+  SessionPlan,
+  Tree,
+} from '@/state/types'
 import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from '@/state/types'
 
 const FOREST: Forest = {
@@ -51,15 +58,30 @@ const ACTIVE: ActiveSession = {
   pausedAt: null,
   pausedMs: 0,
   cell: { col: 1, row: 1 },
+  planId: null,
 }
 
-const STATE: PersistedV3 = {
-  version: 3,
+const PLAN: SessionPlan = {
+  id: 'plan-1',
+  forestId: DEFAULT_FOREST_ID,
+  title: 'Terminar el TP',
+  description: null,
+  tasks: [],
+  targetPomodoros: 2,
+  completedPomodoros: 1,
+  createdAt: 0,
+  finishedAt: null,
+}
+
+const STATE: PersistedV4 = {
+  version: 4,
   forests: [FOREST],
   activeForestId: FOREST.id,
   trees: [TREE],
   sessions: [SESSION],
+  plans: [PLAN],
   active: ACTIVE,
+  activePlanId: PLAN.id,
   settings: { ...DEFAULT_POMODORO_SETTINGS },
   display: { ...DEFAULT_DISPLAY_SETTINGS },
 }
@@ -146,7 +168,11 @@ describe('migrate', () => {
     expect(result.activeForestId).toBe(DEFAULT_FOREST_ID)
     expect(result.trees).toEqual([{ ...LEGACY_TREE, forestId: DEFAULT_FOREST_ID }])
     expect(result.sessions).toEqual([{ ...LEGACY_SESSION, forestId: DEFAULT_FOREST_ID }])
-    expect(result.active).toEqual({ ...LEGACY_ACTIVE, forestId: DEFAULT_FOREST_ID })
+    expect(result.active).toEqual({
+      ...LEGACY_ACTIVE,
+      forestId: DEFAULT_FOREST_ID,
+      planId: null,
+    })
   })
 
   it('no borra datos compatibles de una versión futura', () => {
@@ -166,7 +192,7 @@ describe('migrate', () => {
   })
 
   it('acepta un estado de la versión actual', () => {
-    expect(migrate(STATE, 3)).toEqual(STATE)
+    expect(migrate(STATE, 4)).toEqual(STATE)
   })
 
   it('recupera árboles huérfanos sin perderlos', () => {
@@ -179,13 +205,32 @@ describe('migrate', () => {
         sessions: [],
         active: null,
       },
-      3,
+      4,
     )
 
     expect(result.forests).toHaveLength(1)
     expect(result.activeForestId).toBe(result.forests[0].id)
     expect(result.trees).toHaveLength(1)
     expect(result.trees[0].forestId).toBe(result.forests[0].id)
+  })
+
+  it('migra un guardado v3 a v4 sin sesiones planificadas', () => {
+    const v3 = {
+      version: 3,
+      forests: [FOREST],
+      activeForestId: FOREST.id,
+      trees: [TREE],
+      sessions: [SESSION],
+      active: LEGACY_ACTIVE,
+      settings: { ...DEFAULT_POMODORO_SETTINGS },
+      display: { ...DEFAULT_DISPLAY_SETTINGS },
+    }
+    const result = migrate(v3, 3)
+
+    expect(result.version).toBe(4)
+    expect(result.plans).toEqual([])
+    expect(result.activePlanId).toBeNull()
+    expect(result.sessions).toEqual([{ ...SESSION, forestId: DEFAULT_FOREST_ID }])
   })
 })
 
@@ -203,7 +248,7 @@ describe('isPersistedState', () => {
   })
 
   it('rechaza una versión distinta', () => {
-    expect(isPersistedState({ ...STATE, version: 4 })).toBe(false)
+    expect(isPersistedState({ ...STATE, version: 5 })).toBe(false)
     expect(isPersistedState({ ...STATE, version: 2 })).toBe(false)
   })
 })
@@ -211,7 +256,7 @@ describe('isPersistedState', () => {
 describe('createSafeStorage', () => {
   it('lee un guardado válido sin avisos', () => {
     const { storage } = makeStorage()
-    const raw = envelope(STATE, 3)
+    const raw = envelope(STATE, 4)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -241,7 +286,7 @@ describe('createSafeStorage', () => {
 
   it('respalda y reinicia un estado con forma inválida', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, trees: 'x' }, 3)
+    const raw = envelope({ ...STATE, trees: 'x' }, 4)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -271,7 +316,7 @@ describe('createSafeStorage', () => {
 
   it('no toca una versión más nueva y bloquea las escrituras', () => {
     const { storage } = makeStorage()
-    const raw = envelope({ ...STATE, version: 4 }, 4)
+    const raw = envelope({ ...STATE, version: 5 }, 5)
     storage.setItem('focus-forest', raw)
     const issues: StorageIssue[] = []
     const safe = createSafeStorage(
@@ -281,7 +326,7 @@ describe('createSafeStorage', () => {
 
     expect(safe.getItem('focus-forest')).toBeNull()
     expect(storage.getItem('focus-forest')).toBe(raw)
-    expect(issues).toEqual([{ kind: 'future-version', version: 4 }])
+    expect(issues).toEqual([{ kind: 'future-version', version: 5 }])
 
     safe.setItem('focus-forest', 'nuevo')
     safe.removeItem('focus-forest')

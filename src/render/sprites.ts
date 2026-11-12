@@ -250,6 +250,37 @@ export async function loadGroundTile(size: number = GRID_COLS): Promise<HTMLImag
   }
 }
 
+export interface FrameBounds {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+/** Rectángulo que ocupa un frame en la escena; se usa para seleccionar con doble clic. */
+export function atlasFrameBounds(
+  atlas: Atlas,
+  name: string,
+  baseX: number,
+  baseY: number,
+  scale = 1,
+): FrameBounds | null {
+  const frame = atlas.frames[name]
+  if (!frame) {
+    return null
+  }
+
+  const left = baseX - frame.anchorX * scale
+  const top = baseY - frame.anchorY * scale
+
+  return {
+    left,
+    top,
+    right: left + frame.w * scale,
+    bottom: top + frame.h * scale,
+  }
+}
+
 /**
  * Dibuja un frame anclado abajo al centro. `scale` adapta el arte de cada
  * especie al tamaño de la pradera. `baseX` y `baseY` son el punto de apoyo

@@ -26,6 +26,8 @@ export interface DrawGardenOptions {
   groundTile?: HTMLImageElement | null
   /** Tamaño del bosque en celdas por lado (preview del panel dev). Por defecto 8×8. */
   gardenSize?: number
+  /** Sesiones resaltadas: sus árboles se ven enteros y el resto se atenúa. */
+  selectedSessionIds?: ReadonlySet<string> | null
 }
 
 interface DrawableTree {
@@ -33,6 +35,8 @@ interface DrawableTree {
   species: TreeSpecies
   stage: TreeStage
   state: TreeState
+  sessionId: string | null
+  selected: boolean
 }
 
 const STAGE_SCALE: Record<TreeStage, number> = {
@@ -82,6 +86,7 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
   ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
 
   const meadowShift = meadowTop - TOP_PADDING
+  const selected = options.selectedSessionIds ?? null
   const trees: DrawableTree[] = options.trees
     .filter((tree) => isInsideGarden(tree.cell, size))
     .map((tree) => ({
@@ -89,6 +94,8 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
       species: speciesFromKind(tree.kind),
       stage: tree.stage,
       state: tree.state,
+      sessionId: tree.sessionId,
+      selected: selected?.has(tree.sessionId) ?? false,
     }))
 
   if (options.active && isInsideGarden(options.active.cell, size)) {
@@ -97,12 +104,46 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
       species: options.active.species,
       stage: options.active.stage,
       state: 'mature',
+      sessionId: null,
+      selected: false,
     })
   }
 
-  for (const tree of sortByDepth(trees)) {
+  const ordered = sortByDepth(trees)
+  const hasSelection = ordered.some((tree) => tree.selected)
+
+  // Con una sesión seleccionada, sus árboles se dibujan al final y a opacidad
+  // completa; el resto queda detrás y atenuado para poder leer el conjunto.
+  if (hasSelection) {
+    for (const tree of ordered) {
+      if (tree.selected) {
+        continue
+      }
+      ctx.save()
+      ctx.globalAlpha = 0.32
+      drawTree(ctx, tree, options.atlas ?? null, meadowShift)
+      ctx.restore()
+    }
+    for (const tree of ordered) {
+      if (tree.selected) {
+        drawTree(ctx, tree, options.atlas ?? null, meadowShift)
+      }
+    }
+    return
+  }
+
+  for (const tree of ordered) {
     drawTree(ctx, tree, options.atlas ?? null, meadowShift)
   }
+}
+
+/** Base de un árbol en coordenadas de escena, compartida con el hit-test. */
+export function treeBasePoint(cell: Cell, gardenSize: number): { x: number; baseY: number } {
+  const size = Math.min(GRID_COLS, Math.max(1, Math.round(gardenSize)))
+  const meadowShift = (GRID_COLS - size) * TILE_HEIGHT
+  const point = cellToScreen(cell)
+
+  return { x: point.x, baseY: point.y + meadowShift + 4 }
 }
 
 /** Los árboles fuera del bosque elegido no se dibujan en la preview. */

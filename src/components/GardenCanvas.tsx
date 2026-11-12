@@ -15,6 +15,7 @@ import {
   TOP_PADDING,
 } from '@/config/grid'
 import { DEFAULT_ZOOM, MAX_ZOOM } from '@/config/zoom'
+import { cellFromScenePoint, sortByDepth } from '@/render/iso'
 import { clampPan, panLimit, type PanOffset } from '@/logic/pan'
 import {
   fitPixelScale,
@@ -24,15 +25,19 @@ import {
   stepPixelPerfectZoom,
   wheelZoomStep,
 } from '@/logic/zoom'
-import { drawGarden, type ActiveTreePreview } from '@/render/drawGarden'
+import { drawGarden, treeBasePoint, type ActiveTreePreview } from '@/render/drawGarden'
 import {
+  atlasFrameBounds,
   GROUND_TILE_SIZES,
   loadAtlas,
   loadGroundTile,
+  sheetScale,
   SPRITES_ENABLED,
+  treeFrameName,
   type Atlas,
 } from '@/render/sprites'
-import type { Tree } from '@/state/types'
+import { speciesFromKind } from '@/config/species'
+import type { Cell, Tree } from '@/state/types'
 import { MinusIcon, PineIcon, PlusIcon, ResetIcon } from './icons'
 
 interface GardenCanvasProps {
@@ -42,6 +47,17 @@ interface GardenCanvasProps {
   /** Tamaño del bosque en celdas por lado; 8×8 por defecto. */
   gardenSize: number
   hasForest: boolean
+  /** Sesiones resaltadas; null o vacío apaga el modo selección. */
+  selectedSessionIds?: ReadonlySet<string> | null
+  /** Cambia cuando se elige otra sesión, para recentrar una sola vez. */
+  selectionKey?: string | null
+  onSelectTree?: (tree: Tree | null) => void
+}
+
+interface TapState {
+  time: number
+  x: number
+  y: number
 }
 
 interface DragState {
@@ -50,22 +66,27 @@ interface DragState {
   startY: number
   originX: number
   originY: number
+  moved: boolean
 }
 
 const NO_DRAG_SELECTOR =
   'button, input, textarea, select, a, label, .zoom-control, .card, .dialog-backdrop, [role="dialog"], [role="button"], [contenteditable="true"], [data-no-pan]'
 
-/**
- * La card de "empezá un pomodoro para plantar tu primer árbol" es solo una pista:
- * se retira sola del canvas tras unos segundos. La de bienvenida (sin bosque) no
- * se toca: sigue siendo el onboarding.
- */
-const FIRST_TREE_PROMPT_AUTO_HIDE_MS = 5000
-
-export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: GardenCanvasProps) {
+export function GardenCanvas({
+  trees,
+  active,
+  label,
+  gardenSize,
+  hasForest,
+  selectedSessionIds = null,
+  selectionKey = null,
+  onSelectTree,
+}: GardenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gardenRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragState | null>(null)
+  const lastTapRef = useRef<TapState | null>(null)
+  const centeredSelectionRef = useRef<string | null>(null)
   const panRef = useRef<PanOffset>({ x: 0, y: 0 })
   const wheelZoomRef = useRef(DEFAULT_ZOOM)
   const wheelAccumulatorRef = useRef(0)
@@ -121,30 +142,63 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
     [panRatio.x, panRatio.y, panLimits.x, panLimits.y],
   )
 
-  const showFirstTreePrompt = hasForest && trees.length === 0 && !active
-  const [dismissedFirstTreePrompt, setDismissedFirstTreePrompt] = useState(false)
-  const [lastPromptState, setLastPromptState] = useState(showFirstTreePrompt)
-  if (showFirstTreePrompt !== lastPromptState) {
-    setLastPromptState(showFirstTreePrompt)
-    setDismissedFirstTreePrompt(false)
-  }
-  const firstTreePromptVisible = showFirstTreePrompt && !dismissedFirstTreePrompt
+  const selectionFocus = useMemo<Cell | null>(() => {
+    if (!selectedSessionIds || selectedSessionIds.size === 0) {
+      return null
+    }
+
+    const selectedTrees = sortByDepth(
+      trees.filter((tree) => selectedSessionIds.has(tree.sessionId)),
+    )
+    return selectedTrees[selectedTrees.length - 1]?.cell ?? null
+  }, [trees, selectedSessionIds])
+
+  useLayoutEffect(() => {
+    if (!selectionKey || !selectionFocus || !hasGardenSize) {
+      if (!selectionKey) {
+        centeredSelectionRef.current = null
+      }
+      return
+    }
+    if (centeredSelectionRef.current === selectionKey) {
+      return
+    }
+
+    centeredSelectionRef.current = selectionKey
+    const base = treeBasePoint(selectionFocus, gardenSize)
+    const cssPerScene = pixelScale / dpr
+    const target = clampPan(
+      {
+        x: canvasCssWidth / 2 - base.x * cssPerScene,
+        y: mapCenterOffsetY + canvasCssHeight / 2 - (base.baseY - 58) * cssPerScene,
+      },
+      panLimits,
+    )
+
+    setPanRatio({
+      x: panLimits.x > 0 ? target.x / panLimits.x : 0,
+      y: panLimits.y > 0 ? target.y / panLimits.y : 0,
+    })
+  }, [
+    selectionKey,
+    selectionFocus,
+    hasGardenSize,
+    gardenSize,
+    pixelScale,
+    dpr,
+    canvasCssWidth,
+    canvasCssHeight,
+    mapCenterOffsetY,
+    panLimits,
+  ])
+
+  // La tarjeta central queda visible hasta plantar el primer árbol: no se
+  // oculta sola, porque es la única invitación a crear otro bosque.
+  const showFirstTreePrompt = trees.length === 0 && !active
 
   useLayoutEffect(() => {
     panRef.current = pan
   }, [pan])
-
-  useEffect(() => {
-    if (!firstTreePromptVisible) {
-      return
-    }
-
-    const timeout = window.setTimeout(
-      () => setDismissedFirstTreePrompt(true),
-      FIRST_TREE_PROMPT_AUTO_HIDE_MS,
-    )
-    return () => window.clearTimeout(timeout)
-  }, [firstTreePromptVisible])
 
   useEffect(() => {
     if (!SPRITES_ENABLED) {
@@ -228,8 +282,19 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
       atlas,
       groundTile: groundTiles[gardenSize] ?? null,
       gardenSize,
+      selectedSessionIds,
     })
-  }, [trees, active, canvasWidth, canvasHeight, atlas, groundTiles, spritesReady, gardenSize])
+  }, [
+    trees,
+    active,
+    canvasWidth,
+    canvasHeight,
+    atlas,
+    groundTiles,
+    spritesReady,
+    gardenSize,
+    selectedSessionIds,
+  ])
 
   useEffect(() => {
     const garden = gardenRef.current
@@ -287,6 +352,7 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
         startY: event.clientY,
         originX: panRef.current.x,
         originY: panRef.current.y,
+        moved: false,
       }
     }
 
@@ -308,10 +374,101 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
     setPanRatio({ x: 0, y: 0 })
   }
 
+  /**
+   * Convierte el punto del puntero a coordenadas de escena y busca el árbol
+   * más adelante en profundidad. Si no toca un sprite, cae a la celda del
+   * rombo: así también se puede elegir un árbol por su parcela.
+   */
+  const pickTreeAt = (clientX: number, clientY: number) => {
+    if (!onSelectTree || active || !hasForest) {
+      return
+    }
+
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return
+    }
+
+    const rect = canvas.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) {
+      return
+    }
+
+    const point = {
+      x: -2 + ((clientX - rect.left) / rect.width) * (SCENE_WIDTH + 4),
+      y: ((clientY - rect.top) / rect.height) * SCENE_HEIGHT,
+    }
+    const ordered = sortByDepth(
+      trees.filter(
+        (tree) =>
+          tree.cell.col >= 0 &&
+          tree.cell.col < gardenSize &&
+          tree.cell.row >= 0 &&
+          tree.cell.row < gardenSize,
+      ),
+    ).reverse()
+
+    for (const tree of ordered) {
+      const base = treeBasePoint(tree.cell, gardenSize)
+      if (atlas) {
+        const frameName = treeFrameName(speciesFromKind(tree.kind), tree.stage, tree.state)
+        const frame = atlas.frames[frameName]
+        if (frame) {
+          const bounds = atlasFrameBounds(
+            atlas,
+            frameName,
+            base.x,
+            base.baseY,
+            sheetScale(frame.sheet),
+          )
+          if (
+            bounds &&
+            point.x >= bounds.left &&
+            point.x <= bounds.right &&
+            point.y >= bounds.top &&
+            point.y <= bounds.bottom
+          ) {
+            onSelectTree(tree)
+            return
+          }
+          continue
+        }
+      }
+
+      if (
+        point.x >= base.x - 30 &&
+        point.x <= base.x + 30 &&
+        point.y >= base.baseY - 112 &&
+        point.y <= base.baseY + 4
+      ) {
+        onSelectTree(tree)
+        return
+      }
+    }
+
+    const cell = cellFromScenePoint(point, gardenSize)
+    if (!cell) {
+      onSelectTree(null)
+      return
+    }
+
+    const cellTree = ordered.find(
+      (tree) => tree.cell.col === cell.col && tree.cell.row === cell.row,
+    )
+    onSelectTree(cellTree ?? null)
+  }
+
   const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) {
       return
+    }
+
+    if (
+      !drag.moved &&
+      Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4
+    ) {
+      drag.moved = true
     }
 
     const next = clampPan(
@@ -345,6 +502,25 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
     }
 
     dragRef.current = null
+
+    if (drag.moved) {
+      lastTapRef.current = null
+      return
+    }
+
+    const now = Date.now()
+    const last = lastTapRef.current
+    if (
+      last &&
+      now - last.time <= 340 &&
+      Math.hypot(event.clientX - last.x, event.clientY - last.y) <= 14
+    ) {
+      lastTapRef.current = null
+      pickTreeAt(event.clientX, event.clientY)
+      return
+    }
+
+    lastTapRef.current = { time: now, x: event.clientX, y: event.clientY }
   }
 
   const cancelDrag = () => {
@@ -379,11 +555,11 @@ export function GardenCanvas({ trees, active, label, gardenSize, hasForest }: Ga
         draggable={false}
       />
 
-      {trees.length === 0 && !active && !dismissedFirstTreePrompt && (
+      {showFirstTreePrompt && (
         <div className="pointer-events-none absolute inset-x-0 top-[56%] z-10 flex justify-center px-6">
           {hasForest ? (
             <p className="card card--compact type-body max-w-xs text-center font-medium">
-              Empezá un pomodoro para plantar tu primer árbol.
+              Este es tu bosque. Si querés otro, podés crearlo desde <strong>Bosques</strong>.
             </p>
           ) : (
             <div className="card card--compact forest-welcome pointer-events-auto">

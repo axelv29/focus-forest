@@ -4,7 +4,7 @@ Reglas del proyecto para cualquier persona o agente que trabaje en este reposito
 
 ## Qué es
 
-App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un árbol en un bosque isométrico propio: pino a los 25 minutos, abedul a los 45, roble desde los 60 y ceibo desde los 90. Abandonar deja el árbol marchito. Un bosque representa un objetivo (una materia, un semestre, un examen) y tiene nombre, tamaño de 4×4 a 8×8 y, opcionalmente, descripción, fecha de fin y meta de horas. Todo se guarda en el navegador.
+App web de enfoque con pomodoro de 25 minutos y descanso de 5. Cada enfoque completado planta un árbol en un bosque isométrico propio: pino a los 25 minutos, abedul a los 45, roble desde los 60 y ceibo desde los 90. Abandonar deja el árbol marchito. Un bosque representa un objetivo (una materia, un semestre, un examen) y tiene nombre, tamaño de 4×4 a 8×8 y, opcionalmente, descripción, fecha de fin y meta de horas. Una sesión puede ser un pomodoro suelto o una serie de hasta 8 con un mismo objetivo; el historial del bosque agrupa los árboles de cada serie. Todo se guarda en el navegador.
 
 ## Stack
 
@@ -34,9 +34,9 @@ Antes de cada commit: `lint`, `test` y `build` en verde.
 ```
 docs/          plan de producto, guía de estilo y sistema de tema
 src/
-  config/      datos del juego: grilla, duraciones, umbrales, zoom
+  config/      datos del juego: grilla, duraciones, umbrales, zoom y límites de sesión
   state/       tipos, store, persistencia y selectores
-  logic/       funciones puras: timer, growth, stats, placement, day, zoom
+  logic/       funciones puras: timer, growth, stats, placement, day, zoom, history
   render/      isometría, atlas y dibujo del canvas
   styles/      tokens del tema visual (colores, fuentes, forma)
   hooks/       enlaces entre React y la lógica
@@ -70,12 +70,15 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 
 ### Datos
 
-- `PersistedV3` es la única forma guardada. Cualquier cambio de forma sube `version` y agrega un caso en `migrate`.
+- `PersistedV4` es la única forma guardada. Cualquier cambio de forma sube `version` y agrega un caso en `migrate`.
 - `Forest` es el contenedor del objetivo: `id`, `name`, `description`, `size` (4–8), `createdAt`, `endsOn` (clave local `YYYY-MM-DD` o `null`), `goalHours` (o `null`) y `archivedAt` (o `null`). Los árboles, las sesiones y la sesión activa llevan `forestId`; un descanso no tiene bosque.
-- Migrar datos viejos crea un bosque “Mi bosque” de 8×8 solo si había árboles, sesiones o una sesión activa, y les asigna ese `forestId`. Sin datos viejos, el estado inicial no tiene bosques: la pantalla de bienvenida muestra una pradera 8×8 de fondo y la tarjeta para crear el primero.
+- `SessionPlan` agrupa uno o varios pomodoros con el mismo objetivo: `id`, `forestId`, `title`, `description`, `tasks`, `targetPomodoros` (1–8), `completedPomodoros`, `createdAt` y `finishedAt` (o `null`). Cada `FocusRecord` de la serie copia `planId`, `pomoIndex`, `pomoTotal`, `title`, `description` y `tasks`. `activePlanId` señala la serie que se puede continuar; una serie se cierra al llegar a la meta o al abandonar cualquiera de sus pomodoros.
+- Los árboles de una serie NO son adyacentes: cada pomodoro usa la colocación normal. La agrupación es lógica (`planId`) y se refleja en el historial y al seleccionar la sesión.
+- Al arrancar sin datos se crea un bosque predeterminado “Mi bosque” de 8×8 y queda activo: la primera pantalla ya muestra la pradera, no el diálogo de creación. Migrar datos viejos también usa ese bosque si no había ninguno y les asigna ese `forestId`. Si se borran todos los bosques, al recargar vuelve a aparecer “Mi bosque”.
 - La fecha de fin se guarda como día local, no como epoch: evita corrimientos por zona horaria. El contador se deriva al renderizar con `Date.UTC` y no se persiste.
 - El nombre y el contador se pueden ocultar desde Ajustes (`display.showForestName`, `display.showCountdown`); por defecto se muestran ambos.
 - Los descansos no se guardan como historial; solo existe el descanso activo.
+- El historial por bosque se deriva de `sessions`, `plans` y `trees`; no se guarda una copia. Agrupa por `planId ?? id`, muestra completadas, abandonadas y mixtas, e incluye filtros Todas, Hoy, Esta semana, Series y Marchitas. Las sesiones de otro bosque no aparecen.
 - Las estadísticas se derivan; no guardar contadores duplicados.
 - Al rehidratar, reconciliar: enfoque vencido → completar; descanso vencido → cerrar; pausado → no completar.
 - Datos dañados: copiar a `focus-forest.broken` y reiniciar. Versión más nueva: avisar y bloquear escrituras sin tocar el original. localStorage bloqueado o lleno: avisar y seguir en memoria.
@@ -95,13 +98,17 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Español para la UI; inglés para identificadores, archivos y tipos.
 - Tema centralizado: `src/styles/theme.css` es la fuente de verdad; `src/index.css` lo registra en Tailwind y define las clases de componentes. No usar hex, tamaños de fuente ni sombras sueltas en los `.tsx`.
 - Tarjetas con `.card` (y `--compact`/`--roomy`); botones con `.btn` y variantes; textos con `.type-*` o `.eyebrow`. Ver `docs/THEMING.md`.
-- La creación de bosque es un diálogo aparte, no la pantalla de cambio de bosque. Se abre desde la tarjeta de bienvenida (o desde Iniciar cuando todavía no hay bosque) y usa el mismo sistema de tarjetas, botones, selects y campos que Ajustes. Incluye una vista previa con el atlas real y árboles de ejemplo de distintas especies y etapas. El selector de fecha es propio, no el calendario nativo del navegador.
+- La creación de bosque es un diálogo aparte, no la pantalla de cambio de bosque. Se abre desde la vista Bosques (o desde Iniciar cuando todavía no hay bosque) y usa el mismo sistema de tarjetas, botones, selects y campos que Ajustes. Incluye una vista previa con el atlas real y árboles de ejemplo de distintas especies y etapas. El selector de fecha es propio, no el calendario nativo del navegador.
 - La cabecera muestra el nombre del bosque activo y, si tiene fecha, un chip con “Faltan N días” / “Último día” / “Terminó…”. No se muestra nada si ambos ajustes están ocultos.
-- La vista **Bosques** (tercera opción del switch) lista los bosques con su tamaño y estado; elegir uno lo vuelve activo y lleva a la vista Bosque. Desde ahí también se crea un nuevo bosque.
+- El switch de vistas tiene tres opciones: **Bosque**, **Estadísticas** y **Bosques**. La vista Bosques lista los bosques con su tamaño y estado; elegir uno lo vuelve activo y lleva a la vista Bosque. Desde ahí también se crea un nuevo bosque y se abre el historial de cada uno.
+- El **Historial** no es una vista más: es una ventana flotante del bosque activo que se abre con el botón discreto de la tarjeta del timer y se apila a la izquierda, debajo de la tarjeta de sesión. Tiene filtros (Todas, Hoy, Esta semana, Series, Marchitas) y una lista con scroll propio; cada fila agrupa un pomodoro o una serie, con fecha y hora, minutos de enfoque, estado y cantidad de árboles. Al elegir una sesión, la pradera resalta todos sus árboles y atenúa el resto, y la tarjeta de detalle aparece en la misma columna izquierda.
+- **Iniciar** abre el diálogo de sesión cuando hay bosque: nombre, descripción, objetivos y uno o varios pomodoros. Si la pradera todavía no tiene bosque, primero abre el diálogo de creación y después el de sesión. Una serie pendiente se puede continuar desde el timer; empezar una nueva cierra la anterior.
+- Un árbol o una celda se pueden seleccionar con doble clic (también con el historial abierto): se abre la tarjeta de la sesión a la que pertenecen. Si los árboles se superponen, el historial sigue siendo la vía confiable.
 - En desktop las tarjetas se anclan a 16 px de los bordes de la ventana con ancho fluido: el timer es la tarjeta principal y siempre es más ancha que la de sesión.
 - Dos fuentes: Nunito (textos, títulos y timer) y Quicksand 600 (botones y controles). Se sirven desde `@fontsource`.
 - Forma suave: esquinas de 12 a 16 px, bordes finos translúcidos, sombras muy tenues y sin degradados, salvo el anillo del temporizador. Nada de estética pixel en el DOM.
-- La tarjeta de sesión solo aparece mientras corre un enfoque (también en pausa): nombre derivado, día y hora de inicio, estado del árbol y bosque. La línea de etapas resume el crecimiento y el ícono es una miniatura del atlas de la etapa actual.
+- La tarjeta de sesión solo aparece mientras corre un enfoque (también en pausa): nombre de la sesión (o el derivado si no tiene), día y hora de inicio, estado del árbol y bosque. En series muestra “Pomodoro N de M”. La línea de etapas resume el crecimiento y el ícono es una miniatura del atlas de la etapa actual.
+- La selección de una sesión en la pradera no cambia los datos ni el timer: los árboles de esa sesión se dibujan al final y a opacidad completa, sin marcas en la grilla, y el resto baja a 0.32. El doble clic se detecta manualmente (dos toques en menos de 340 ms y 14 px) porque el canvas cancela el evento nativo.
 - Respetar `prefers-reduced-motion`.
 - Durante una sesión: el selector de vistas se deshabilita y no se puede cambiar de ventana; timer, pausa y abandonar siguen a mano.
 - Zoom de la pradera: control de vista de 0.5× a 2×, solo en memoria; se usa con tres botones flotantes (acercar, alejar y restablecer) o con la rueda del mouse; no toca timer, store ni persistencia. En desktop los niveles posibles son 50, 100, 150 y 200 %: todos son escalas enteras de origen y por lo tanto pixel-perfect estrictos. No hay niveles intermedios fraccionarios. La rueda avanza un nivel entero por giro (50→100→150→200) y acumula los deltas chicos de un trackpad. Si la escala base ya entra a 1:1, el mínimo es 1×. No hay slider ni porcentaje visible.
