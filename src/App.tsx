@@ -84,23 +84,21 @@ function App() {
     return { cell: active.cell, species: activeSpecies, stage: activeStage }
   }, [active, activeSpecies, activeStage])
 
-  const effectiveSelectedKey = active ? null : selectedKey
-
   const selectedEntry = useMemo(() => {
-    if (!effectiveSelectedKey || !activeForest) {
+    if (!selectedKey || !activeForest) {
       return null
     }
 
     return (
       buildHistory(sessions, plans, trees, activeForest.id, 'all', now).find(
-        (entry) => entry.key === effectiveSelectedKey,
+        (entry) => entry.key === selectedKey,
       ) ?? null
     )
-  }, [effectiveSelectedKey, activeForest, sessions, plans, trees, now])
+  }, [selectedKey, activeForest, sessions, plans, trees, now])
   const selectedIds = useMemo(() => selectedSessionIds(selectedEntry), [selectedEntry])
 
   useEffect(() => {
-    if (!effectiveSelectedKey) {
+    if (!selectedKey) {
       return
     }
 
@@ -112,7 +110,7 @@ function App() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [effectiveSelectedKey, sessionDialogOpen, forestDialogOpen])
+  }, [selectedKey, sessionDialogOpen, forestDialogOpen])
 
   const closeConfirm = useCallback(() => setConfirmRequest(null), [])
   const confirmAbandon = useCallback(() => {
@@ -361,7 +359,7 @@ function App() {
               )}
             </div>
 
-            <div className="relative z-10 mx-auto mt-4 w-full max-w-md px-4 min-[768px]:absolute min-[768px]:right-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(350px,20vw,420px)] min-[768px]:px-0">
+            <div className="relative z-10 mx-auto mt-4 flex w-full max-w-md flex-col gap-3 px-4 min-[768px]:absolute min-[768px]:right-4 min-[768px]:top-4 min-[768px]:mt-0 min-[768px]:w-[clamp(350px,20vw,420px)] min-[768px]:px-0">
               <TimerPanel
                 now={now}
                 view={view}
@@ -373,6 +371,14 @@ function App() {
                 historyOpen={historyOpen}
                 onToggleHistory={() => setHistoryOpen((open) => !open)}
               />
+
+              {active && selectedEntry && activeForest && (
+                <SessionDetailCard
+                  entry={selectedEntry}
+                  forestName={activeForest.name}
+                  onClose={() => setSelectedKey(null)}
+                />
+              )}
             </div>
           </div>
         ) : (
