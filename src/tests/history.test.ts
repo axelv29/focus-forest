@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createFocusSession } from '@/logic/timer'
 import { buildHistory, selectedSessionIds } from '@/logic/history'
 import type { FocusRecord, SessionPlan, Tree } from '@/state/types'
 
@@ -131,6 +132,46 @@ describe('buildHistory', () => {
     expect(entries).toHaveLength(1)
     expect(entries[0].status).toBe('abandoned')
     expect(entries[0].totalDurationMin).toBe(5)
+  })
+
+  it('incluye la sesión en curso con los minutos enfocados hasta ahora', () => {
+    const running = createFocusSession(
+      'session-running',
+      NOW - 5 * 60_000,
+      { col: 1, row: 1 },
+      25,
+      FOREST,
+    )
+
+    const entries = buildHistory([], [], [], FOREST, 'all', NOW, running)
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].status).toBe('running')
+    expect(entries[0].totalDurationMin).toBe(5)
+    expect(entries[0].startedAt).toBe(running.startedAt)
+    expect(entries[0].trees).toHaveLength(1)
+  })
+
+  it('mezcla el pomodoro completado con la sesión en curso de una serie', () => {
+    const running = {
+      ...createFocusSession('session-b2', NOW - 60_000, { col: 2, row: 2 }, 25, FOREST),
+      planId: PLAN.id,
+    }
+
+    const entries = buildHistory(
+      [record('session-a', EARLIER, 'completed', PLAN.id)],
+      [PLAN],
+      [],
+      FOREST,
+      'all',
+      NOW,
+      running,
+    )
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].status).toBe('running')
+    expect(entries[0].records).toHaveLength(2)
+    expect(entries[0].totalDurationMin).toBe(26)
   })
 })
 

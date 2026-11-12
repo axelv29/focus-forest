@@ -1,8 +1,11 @@
-import type { FocusRecord, SessionPlan, Tree } from '@/state/types'
+import type { ActiveSession, FocusRecord, SessionPlan, Tree } from '@/state/types'
+import { speciesForFocusMin } from '@/config/species'
+import { stageForElapsedMs } from '@/logic/growth'
+import { elapsedMs } from './timer'
 import { localDayKey } from './day'
 
 export type HistoryFilter = 'all' | 'today' | 'week' | 'multi' | 'withered'
-export type HistoryStatus = 'completed' | 'abandoned' | 'mixed'
+export type HistoryStatus = 'completed' | 'abandoned' | 'mixed' | 'running'
 
 /** Una sesión del historial: uno o varios pomodoros agrupados por plan. */
 export interface HistoryEntry {
@@ -43,6 +46,11 @@ function startOfLocalWeek(now: number): number {
 function statusFor(records: readonly FocusRecord[]): HistoryStatus {
   const completed = records.filter((record) => record.status === 'completed').length
   const abandoned = records.length - completed
+  const latest = records[records.length - 1]
+
+  if (latest && latest.status === 'running') {
+    return 'running'
+  }
 
   if (abandoned === 0) {
     return 'completed'
@@ -99,6 +107,7 @@ function buildEntry(
 /**
  * Agrupa los pomodoros de una misma sesión y aplica los filtros del historial.
  * Solo se consideran sesiones de enfoque; los descansos nunca se guardan.
+ * Si hay un enfoque corriendo en el bosque, entra como sesión en curso.
  */
 export function buildHistory(
   sessions: readonly FocusRecord[],
@@ -107,6 +116,7 @@ export function buildHistory(
   forestId: string | null,
   filter: HistoryFilter,
   now: number,
+  active: ActiveSession | null = null,
 ): HistoryEntry[] {
   if (!forestId) {
     return []
@@ -120,11 +130,7 @@ export function buildHistory(
   )
   const groups = new Map<string, FocusRecord[]>()
 
-  for (const record of sessions) {
-    if (record.forestId !== forestId) {
-      continue
-    }
-
+  const pushRecord = (record: FocusRecord) => {
     const key = record.planId ?? record.id
     const group = groups.get(key)
     if (group) {
@@ -132,6 +138,51 @@ export function buildHistory(
     } else {
       groups.set(key, [record])
     }
+  }
+
+  for (const record of sessions) {
+    if (record.forestId !== forestId) {
+      continue
+    }
+
+    pushRecord(record)
+  }
+
+  // La sesión en curso se agrega al historial con los minutos reales enfocados
+  // hasta ahora; si es una continuación de una serie, comparte su grupo.
+  const runningFocus = active?.kind === 'focus' && active.forestId === forestId ? active : null
+  if (runningFocus) {
+    const runningSpecies = speciesForFocusMin(runningFocus.durationMin)
+    const runningTree = {
+      id: runningFocus.id,
+      forestId: runningFocus.forestId,
+      sessionId: runningFocus.id,
+      cell: runningFocus.cell ?? { col: 0, row: 0 },
+      kind: runningSpecies,
+      stage: stageForElapsedMs(
+        runningSpecies,
+        elapsedMs(runningFocus, now),
+        runningFocus.durationMin,
+      ),
+      state: 'mature',
+      createdAt: runningFocus.startedAt,
+    } as Tree
+    treesBySession.set(runningFocus.id, runningTree)
+    pushRecord({
+      id: runningFocus.id,
+      forestId: runningFocus.forestId ?? forestId,
+      startedAt: runningFocus.startedAt,
+      endedAt: now,
+      durationMin: Math.max(1, Math.round(elapsedMs(runningFocus, now) / 60_000)),
+      status: 'running',
+      treeId: runningFocus.id,
+      title: runningFocus.title ?? null,
+      description: runningFocus.description ?? null,
+      tasks: runningFocus.tasks ? [...runningFocus.tasks] : [],
+      planId: runningFocus.planId ?? null,
+      pomoIndex: runningFocus.pomoIndex,
+      pomoTotal: runningFocus.pomoTotal,
+    })
   }
 
   const entries = [...groups.entries()]

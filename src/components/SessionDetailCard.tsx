@@ -17,6 +17,7 @@ const STATUS_LABEL = {
   completed: 'Completada',
   abandoned: 'Abandonada',
   mixed: 'Con abandonos',
+  running: 'En curso',
 } as const
 
 export function SessionDetailCard({
@@ -37,7 +38,9 @@ export function SessionDetailCard({
       ? 'Sesión completada'
       : entry.status === 'abandoned'
         ? 'Sesión abandonada'
-        : 'Sesión con abandonos'
+        : entry.status === 'running'
+          ? 'Sesión en curso'
+          : 'Sesión con abandonos'
   const detail =
     entry.targetPomodoros > 1
       ? `Pomodoro ${entry.completedPomodoros} de ${entry.targetPomodoros} · ${entry.totalDurationMin} min`
@@ -45,7 +48,11 @@ export function SessionDetailCard({
 
   return (
     <section
-      className={className ? `card card--session session-detail ${className}` : 'card card--session session-detail'}
+      className={
+        className
+          ? `card card--session session-detail ${className}`
+          : 'card card--session session-detail'
+      }
       aria-label="Datos de la sesión"
     >
       <div className="session-detail__head">
@@ -53,7 +60,12 @@ export function SessionDetailCard({
           <p className="eyebrow">{eyebrow}</p>
           <h2 className="type-title session-detail__title">{entry.title}</h2>
         </div>
-        <button type="button" className="icon-button session-detail__close" onClick={onClose} aria-label="Cerrar datos de la sesión">
+        <button
+          type="button"
+          className="icon-button session-detail__close"
+          onClick={onClose}
+          aria-label="Cerrar datos de la sesión"
+        >
           <CloseIcon />
         </button>
       </div>
@@ -84,7 +96,9 @@ export function SessionDetailCard({
         })}
       </ol>
 
-      {entry.description && <p className="session-detail__description type-caption">{entry.description}</p>}
+      {entry.description && (
+        <p className="session-detail__description type-caption">{entry.description}</p>
+      )}
 
       {entry.tasks.length > 0 && (
         <ul className="session-detail__tasks" aria-label="Objetivos de la sesión">
@@ -152,14 +166,16 @@ export function SessionDetailCard({
         </div>
         <div className="session-data__row">
           <dt className="session-data__label">Árbol</dt>
-          <dd className="session-data__value">
-            {state === 'withered' ? 'Marchito' : 'Plantado'}
-          </dd>
+          <dd className="session-data__value">{state === 'withered' ? 'Marchito' : 'Plantado'}</dd>
         </div>
       </dl>
 
       {onBackToHistory && (
-        <button type="button" className="btn btn-secondary btn--sm session-detail__back" onClick={onBackToHistory}>
+        <button
+          type="button"
+          className="btn btn-secondary btn--sm session-detail__back"
+          onClick={onBackToHistory}
+        >
           <BackIcon />
           Volver al historial
         </button>

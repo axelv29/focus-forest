@@ -81,7 +81,7 @@ function App() {
       return null
     }
 
-    return { cell: active.cell, species: activeSpecies, stage: activeStage }
+    return { cell: active.cell, species: activeSpecies, stage: activeStage, sessionId: active.id }
   }, [active, activeSpecies, activeStage])
 
   const selectedEntry = useMemo(() => {
@@ -90,11 +90,11 @@ function App() {
     }
 
     return (
-      buildHistory(sessions, plans, trees, activeForest.id, 'all', now).find(
+      buildHistory(sessions, plans, trees, activeForest.id, 'all', now, active).find(
         (entry) => entry.key === selectedKey,
       ) ?? null
     )
-  }, [selectedKey, activeForest, sessions, plans, trees, now])
+  }, [selectedKey, activeForest, sessions, plans, trees, now, active])
   const selectedIds = useMemo(() => selectedSessionIds(selectedEntry), [selectedEntry])
 
   useEffect(() => {

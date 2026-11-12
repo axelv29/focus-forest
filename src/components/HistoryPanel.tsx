@@ -24,6 +24,7 @@ const STATUS_LABEL = {
   completed: 'Completada',
   abandoned: 'Abandonada',
   mixed: 'Con abandonos',
+  running: 'En curso',
 } as const
 
 /** Ventana flotante con el historial del bosque activo. */
@@ -33,13 +34,14 @@ export function HistoryPanel({ now, selectedEntry, onSelectKey, onClose }: Histo
   const trees = useStore((state) => state.trees)
   const forests = useStore((state) => state.forests)
   const activeForestId = useStore((state) => state.activeForestId)
+  const active = useStore((state) => state.active)
   const activeForest = selectActiveForest(forests, activeForestId)
   const [filter, setFilter] = useState<HistoryFilter>('all')
   const listScrollbar = useEdgeScrollbar<HTMLDivElement>()
 
   const entries = useMemo(
-    () => buildHistory(sessions, plans, trees, activeForest?.id ?? null, filter, now),
-    [sessions, plans, trees, activeForest?.id, filter, now],
+    () => buildHistory(sessions, plans, trees, activeForest?.id ?? null, filter, now, active),
+    [sessions, plans, trees, activeForest?.id, filter, now, active],
   )
   const totalMinutes = entries.reduce((total, entry) => total + entry.totalDurationMin, 0)
 

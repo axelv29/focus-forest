@@ -17,6 +17,8 @@ export interface ActiveTreePreview {
   cell: Cell
   species: TreeSpecies
   stage: TreeStage
+  /** Sesión activa cuyo árbol crece; permite incluirlo en la selección. */
+  sessionId?: string | null
 }
 
 export interface DrawGardenOptions {
@@ -99,13 +101,14 @@ export function drawGarden(ctx: CanvasRenderingContext2D, options: DrawGardenOpt
     }))
 
   if (options.active && isInsideGarden(options.active.cell, size)) {
+    const activeId = options.active.sessionId ?? null
     trees.push({
       cell: options.active.cell,
       species: options.active.species,
       stage: options.active.stage,
       state: 'mature',
-      sessionId: null,
-      selected: false,
+      sessionId: activeId,
+      selected: activeId !== null && selected?.has(activeId) === true,
     })
   }
 

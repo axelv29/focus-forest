@@ -4,7 +4,7 @@ export type TreeStage = 1 | 2 | 3 | 4 | 5 | 6 | 7
 export type TreeSpecies = 'pino' | 'abedul' | 'roble' | 'ceibo'
 export type TreeState = 'mature' | 'withered'
 export type SessionKind = 'focus' | 'break'
-export type FocusStatus = 'completed' | 'abandoned'
+export type FocusStatus = 'completed' | 'abandoned' | 'running'
 export type TreeKind = string
 export type AlarmTone = 'bell' | 'chime' | 'pulse'
 

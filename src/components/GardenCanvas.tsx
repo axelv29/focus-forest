@@ -150,8 +150,12 @@ export function GardenCanvas({
     const selectedTrees = sortByDepth(
       trees.filter((tree) => selectedSessionIds.has(tree.sessionId)),
     )
+    if (active?.sessionId && selectedSessionIds.has(active.sessionId)) {
+      return active.cell
+    }
+
     return selectedTrees[selectedTrees.length - 1]?.cell ?? null
-  }, [trees, selectedSessionIds])
+  }, [trees, selectedSessionIds, active])
 
   useLayoutEffect(() => {
     if (!selectionKey || !selectionFocus || !hasGardenSize) {
@@ -464,10 +468,7 @@ export function GardenCanvas({
       return
     }
 
-    if (
-      !drag.moved &&
-      Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4
-    ) {
+    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4) {
       drag.moved = true
     }
 
