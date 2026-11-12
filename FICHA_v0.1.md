@@ -35,7 +35,7 @@ Una app web de escritorio donde una persona completa pomodoros de 25 minutos y v
 4. **Completar:** el árbol adulto queda en la pradera, se registra el pomodoro y aparece un aviso. Si la serie tiene más pomodoros, se ofrece **Continuar**; si terminó, se cierra. También se ofrece el descanso.
 5. **Descanso:** timer de 5:00, sin árbol. Se puede pausar o saltar. Al terminar, vuelve al inicio.
 6. **Abandonar:** pide confirmación; el árbol queda marchito con la variante de su etapa, no acredita minutos, cierra la serie y no hay mensaje de castigo.
-7. **Historial:** se abre con un botón discreto de la tarjeta del timer y aparece como ventana flotante a la izquierda, debajo de la tarjeta de sesión. Agrupa los pomodoros por serie y muestra fecha, minutos, estado y árboles (incluidos los marchitos). La card se corta antes del borde inferior de la pantalla y solo su lista scrollea, con una barra fina que se ve al acercar el puntero al borde derecho. Al elegir una sesión, todos sus árboles se ven a opacidad normal y el resto se atenúa; la tarjeta de detalle muestra el inicio, el fin, el total de enfoque y el estado. Con un pomodoro en curso también se puede abrir el detalle de una sesión, que aparece debajo de la tarjeta del timer.
+7. **Historial:** se abre con un botón discreto de la tarjeta del timer y aparece como ventana flotante a la izquierda, debajo de la tarjeta de sesión. Agrupa los pomodoros por serie y muestra fecha, minutos, estado y árboles (incluidos los marchitos). La card se corta antes del borde inferior de la pantalla y solo su lista scrollea, con una barra fina que se ve al acercar el puntero al borde derecho. Al elegir una sesión, todos sus árboles se ven a opacidad normal y el resto se atenúa; la tarjeta de detalle muestra el inicio, el fin, el total de enfoque y el estado. Con un pomodoro en curso también se puede abrir el detalle de una sesión, que aparece debajo de la tarjeta del timer; el resto de los árboles, incluido el que está creciendo, se atenúa.
 8. **Recargar:** si el enfoque sigue corriendo, se reanuda; si ya venció, se completa. Si el descanso venció, se cierra. Una serie pendiente se puede continuar.
 9. **Zoom:** la pradera se puede acercar o alejar entre 0.5× y 2× con tres botones flotantes (acercar, alejar, restablecer) o la rueda del mouse. Es una vista de sesión: no cambia el timer, los árboles ni los datos guardados. En desktop el mínimo es 1× si la escena ya entra a esa escala.
 
@@ -168,7 +168,7 @@ Los descansos no se guardan como historial: solo existe el descanso activo. Las 
 - [x] Completar un pomodoro intermedio ofrece continuar la serie; abandonar cierra la serie completa.
 - [x] El historial agrupa los pomodoros de una serie, incluye árboles marchitos y filtra por hoy, semana, series y marchitas.
 - [x] Elegir una sesión (lista, árbol o celda con doble clic) resalta sus árboles y atenúa el resto sin tocar el store.
-- [x] Con un pomodoro en curso se puede abrir el detalle de una sesión desde el historial y aparece debajo de la tarjeta del timer.
+- [x] Con un pomodoro en curso se puede abrir el detalle de una sesión desde el historial y aparece debajo de la tarjeta del timer; el resto de los árboles, incluido el que crece, se atenúa.
 - [x] Sin datos, la app abre directamente "Mi bosque" y el historial vive en una ventana flotante con scroll, no en una vista más.
 - [x] La posición de la serie (`3/5`) se ve dentro del anillo arriba del reloj.
 - [ ] Revisión visual del diálogo de sesión, el historial flotante y el switch de tres vistas en desktop y a 360 px.

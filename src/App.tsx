@@ -332,7 +332,7 @@ function App() {
                 label={label}
                 gardenSize={activeForest?.size ?? devGardenSize}
                 hasForest={activeForest !== null}
-                selectedSessionIds={active ? null : selectedIds}
+                selectedSessionIds={selectedIds}
                 selectionKey={active ? null : selectedKey}
                 onSelectTree={active ? undefined : handleSelectTree}
               />
