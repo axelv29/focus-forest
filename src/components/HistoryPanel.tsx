@@ -7,6 +7,7 @@ import {
   type HistoryFilter,
 } from '@/logic/history'
 import { formatSessionStart } from '@/logic/session'
+import { useEdgeScrollbar } from '@/hooks/useEdgeScrollbar'
 import { selectActiveForest } from '@/state/selectors'
 import { useStore } from '@/state/store'
 import { CloseIcon } from './icons'
@@ -34,10 +35,10 @@ export function HistoryPanel({ now, selectedEntry, onSelectKey, onClose }: Histo
   const activeForestId = useStore((state) => state.activeForestId)
   const activeForest = selectActiveForest(forests, activeForestId)
   const [filter, setFilter] = useState<HistoryFilter>('all')
+  const listScrollbar = useEdgeScrollbar<HTMLDivElement>()
 
   const entries = useMemo(
-    () =>
-      buildHistory(sessions, plans, trees, activeForest?.id ?? null, filter, now),
+    () => buildHistory(sessions, plans, trees, activeForest?.id ?? null, filter, now),
     [sessions, plans, trees, activeForest?.id, filter, now],
   )
   const totalMinutes = entries.reduce((total, entry) => total + entry.totalDurationMin, 0)
@@ -47,9 +48,7 @@ export function HistoryPanel({ now, selectedEntry, onSelectKey, onClose }: Histo
       <div className="history-panel__head">
         <div className="min-w-0">
           <p className="eyebrow">Historial</p>
-          <h2 className="type-title history-panel__title">
-            {activeForest?.name ?? 'Sin bosque'}
-          </h2>
+          <h2 className="type-title history-panel__title">{activeForest?.name ?? 'Sin bosque'}</h2>
         </div>
         <button
           type="button"
@@ -84,7 +83,11 @@ export function HistoryPanel({ now, selectedEntry, onSelectKey, onClose }: Histo
           No hay sesiones con este filtro. Probá con “Todas”.
         </p>
       ) : (
-        <div className="history-list history-panel__list">
+        <div
+          onPointerMove={listScrollbar.onPointerMove}
+          onPointerLeave={listScrollbar.onPointerLeave}
+          className={`history-list history-panel__list edge-scrollbar${listScrollbar.nearEdge ? ' is-scrollbar-visible' : ''}`}
+        >
           {entries.map((entry) => {
             const tree = entry.primaryTree
             const selected = selectedEntry?.key === entry.key
