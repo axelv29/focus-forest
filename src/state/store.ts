@@ -37,7 +37,13 @@ import type {
   Tree,
 } from './types'
 import { DEFAULT_DISPLAY_SETTINGS, DEFAULT_POMODORO_SETTINGS } from './types'
-import { createDefaultForest, migrate, PERSIST_VERSION, persistStorage, STORAGE_KEY } from './persist'
+import {
+  createDefaultForest,
+  migrate,
+  PERSIST_VERSION,
+  persistStorage,
+  STORAGE_KEY,
+} from './persist'
 
 export type NoticeKind = 'info' | 'success' | 'warning'
 
@@ -211,7 +217,10 @@ export const useStore = create<StoreState>()(
             ? state.plans.find((item) => item.id === active.planId)
             : undefined
           const completedPomodoros = plan
-            ? Math.min(plan.targetPomodoros, Math.max(plan.completedPomodoros + 1, active.pomoIndex ?? 1))
+            ? Math.min(
+                plan.targetPomodoros,
+                Math.max(plan.completedPomodoros + 1, active.pomoIndex ?? 1),
+              )
             : 0
           const planFinished = plan ? completedPomodoros >= plan.targetPomodoros : false
           const plans = plan
@@ -500,9 +509,7 @@ export const useStore = create<StoreState>()(
 
           set({
             plans: state.plans.map((plan) =>
-              plan.id === planId && plan.finishedAt === null
-                ? { ...plan, finishedAt: now }
-                : plan,
+              plan.id === planId && plan.finishedAt === null ? { ...plan, finishedAt: now } : plan,
             ),
             activePlanId: null,
             notice: { kind: 'info', text: 'La sesión pendiente se cerró.' },
@@ -612,8 +619,13 @@ export const useStore = create<StoreState>()(
             return
           }
 
+          // El árbol se marchita, pero el tiempo enfocado no se pierde: el
+          // registro guarda los minutos reales (sin pausas), no la duración
+          // planeada. Mínimo 1 minuto para cualquier abandono con tiempo.
+          const focusMs = elapsedMs(active, now)
+          const elapsedMin = Math.max(1, Math.round(focusMs / 60_000))
           const species = speciesForFocusMin(active.durationMin)
-          const stage = stageForElapsedMs(species, elapsedMs(active, now), active.durationMin)
+          const stage = stageForElapsedMs(species, focusMs, active.durationMin)
           const tree: Tree = {
             id: makeId(),
             forestId: active.forestId,
@@ -629,7 +641,7 @@ export const useStore = create<StoreState>()(
             forestId: active.forestId,
             startedAt: active.startedAt,
             endedAt: now,
-            durationMin: active.durationMin,
+            durationMin: elapsedMin,
             status: 'abandoned',
             treeId: tree.id,
             title: active.title ?? null,

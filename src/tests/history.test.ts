@@ -111,6 +111,27 @@ describe('buildHistory', () => {
 
     expect(buildHistory(foreign, [], TREES, FOREST, 'all', NOW)).toEqual([])
   })
+
+  it('suma los minutos de enfoque reales de una sesión abandonada', () => {
+    const abandoned: FocusRecord = {
+      ...record('session-a', EARLIER, 'abandoned'),
+      durationMin: 5,
+      endedAt: EARLIER + 5 * 60_000,
+    }
+
+    const entries = buildHistory(
+      [abandoned],
+      [],
+      [tree('session-a', 'withered')],
+      FOREST,
+      'all',
+      NOW,
+    )
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].status).toBe('abandoned')
+    expect(entries[0].totalDurationMin).toBe(5)
+  })
 })
 
 describe('selectedSessionIds', () => {

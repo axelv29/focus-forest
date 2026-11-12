@@ -83,7 +83,9 @@ function buildEntry(
     tasks: plan?.tasks.length ? plan.tasks : (primaryRecord.tasks ?? []),
     startedAt: Math.min(...ordered.map((record) => record.startedAt)),
     endedAt: Math.max(...ordered.map((record) => record.endedAt)),
-    totalDurationMin: completed.reduce((total, record) => total + record.durationMin, 0),
+    // Los pomodoros completados aportan su duración planeada y los abandonados
+    // los minutos reales enfocados antes de marchitarse.
+    totalDurationMin: ordered.reduce((total, record) => total + record.durationMin, 0),
     status: statusFor(ordered),
     withered: trees.some((tree) => tree.state === 'withered'),
     completedPomodoros: completed.length,
@@ -110,7 +112,9 @@ export function buildHistory(
     return []
   }
 
-  const plansById = new Map(plans.filter((plan) => plan.forestId === forestId).map((plan) => [plan.id, plan]))
+  const plansById = new Map(
+    plans.filter((plan) => plan.forestId === forestId).map((plan) => [plan.id, plan]),
+  )
   const treesBySession = new Map(
     trees.filter((tree) => tree.forestId === forestId).map((tree) => [tree.id, tree]),
   )
@@ -132,7 +136,9 @@ export function buildHistory(
 
   const entries = [...groups.entries()]
     .map(([key, records]) => buildEntry(key, plansById.get(key) ?? null, records, treesBySession))
-    .sort((a, b) => b.endedAt - a.endedAt || b.startedAt - a.startedAt || a.key.localeCompare(b.key))
+    .sort(
+      (a, b) => b.endedAt - a.endedAt || b.startedAt - a.startedAt || a.key.localeCompare(b.key),
+    )
 
   const weekStart = startOfLocalWeek(now)
   const todayKey = localDayKey(now)

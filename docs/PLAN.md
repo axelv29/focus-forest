@@ -21,7 +21,7 @@ Plan acordado antes de escribir la lógica. Lo marcado como **✅ Cerrado** ya s
 | Descanso | 5 minutos, ofrecido con botón; nunca arranca solo |
 | Etapas | 0 brote, 5 joven, 15 maduro, 25 adulto |
 | Al completar | El árbol adulto queda en la pradera y la sesión se registra |
-| Al abandonar | El árbol queda marchito con la variante de su etapa y no acredita minutos |
+| Al abandonar | El árbol queda marchito con la variante de su etapa; se registra el tiempo enfocado real antes de abandonar |
 | Recarga | Reanuda; si el enfoque ya venció, completa; si el descanso venció, cierra |
 | Celdas | 60×30, grilla 8×8, escena lógica 480×400; escala base entera y zoom solo en escalas enteras |
 | Árbol adulto | 44 ancho × 89 alto; frames recortados por estado y dibujo a tamaño nativo |
@@ -88,7 +88,7 @@ Las opciones, comparadas:
 
 - **Sesión de enfoque:** 25 minutos fijos. Empezar, pausar, reanudar y abandonar. La cuenta se calcula con hora de inicio y fin, no restando segundos.
 - **Descanso:** 5 minutos fijos. Se ofrece al completar el enfoque con un botón; no arranca solo. Se puede pausar o saltar. No planta árbol ni suma estadísticas.
-- **Crecimiento:** 4 etapas dentro de los 25 minutos: brote (0), joven (5), maduro (15) y adulto (25). Al abandonar, el árbol queda marchito con la variante de la etapa alcanzada.
+- **Crecimiento:** 4 etapas dentro de los 25 minutos: brote (0), joven (5), maduro (15) y adulto (25). Al abandonar, el árbol queda marchito con la variante de la etapa alcanzada y el registro conserva los minutos enfocados antes de abandonar.
 - **Pradera:** grilla isométrica de 4×4 a 8×8, centrada, con isla flotante y árboles ordenados de atrás hacia adelante. La escala base es común a todos los tamaños; los bosques chicos se ven proporcionalmente más chicos y se pueden acercar con el zoom.
 - **Estadísticas:** pomodoros y minutos de hoy; pomodoros y minutos totales; árboles adultos y marchitos. Sin gráficos.
 - **Guardado:** local en el navegador, con versión de esquema y migración preparada.

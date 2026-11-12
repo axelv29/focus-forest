@@ -65,7 +65,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - Ceibo: 7 etapas proporcionales a los 90 minutos (0, 16, 33, 50, 66, 83 y 100 %): brote, plantín, joven, maduro, grande, muy grande y adulto. Los abandonados usan `ceibo_muerto_atlas.png` (mismos 7 frames).
 - Una sesión de enfoque completada termina en la última etapa de su especie (5 en abedul, 4 en pino, 7 en roble, 7 en ceibo).
 - El árbol se reserva al empezar la sesión; se dibuja creciendo en su celda.
-- Abandonar deja un árbol marchito, con 0 minutos acreditados y el frame marchito de la etapa alcanzada.
+- Abandonar deja un árbol marchito, con el frame marchito de la etapa alcanzada y los minutos de enfoque reales (sin pausas) que corría antes de abandonar; esos minutos se registran en el historial, no en las estadísticas de pomodoros completados.
 - La nueva celda se elige aleatoriamente entre las libres, sin espaciamiento mínimo: se pueden ocupar las 64 celdas de la grilla. Si no quedan libres, se reemplaza el marchito más viejo; si solo hay adultos, se bloquea el inicio.
 
 ### Datos
@@ -78,7 +78,7 @@ Dirección de dependencias: `config` no importa nada; `logic` importa `config` y
 - La fecha de fin se guarda como día local, no como epoch: evita corrimientos por zona horaria. El contador se deriva al renderizar con `Date.UTC` y no se persiste.
 - El nombre y el contador se pueden ocultar desde Ajustes (`display.showForestName`, `display.showCountdown`); por defecto se muestran ambos.
 - Los descansos no se guardan como historial; solo existe el descanso activo.
-- El historial por bosque se deriva de `sessions`, `plans` y `trees`; no se guarda una copia. Agrupa por `planId ?? id`, muestra completadas, abandonadas y mixtas, e incluye filtros Todas, Hoy, Esta semana, Series y Marchitas. Las sesiones de otro bosque no aparecen.
+- El historial por bosque se deriva de `sessions`, `plans` y `trees`; no se guarda una copia. Agrupa por `planId ?? id`, muestra completadas, abandonadas y mixtas, e incluye filtros Todas, Hoy, Esta semana, Series y Marchitas. Las sesiones de otro bosque no aparecen. Los abandonos registran los minutos reales enfocados antes de marchitarse; las completadas suman su duración planeada.
 - Las estadísticas se derivan; no guardar contadores duplicados.
 - Al rehidratar, reconciliar: enfoque vencido → completar; descanso vencido → cerrar; pausado → no completar.
 - Datos dañados: copiar a `focus-forest.broken` y reiniciar. Versión más nueva: avisar y bloquear escrituras sin tocar el original. localStorage bloqueado o lleno: avisar y seguir en memoria.
